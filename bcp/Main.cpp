@@ -37,6 +37,7 @@ SCIP_RETCODE start_solver(
     SCIP_Real time_limit = 0;
     SCIP_Longint node_limit = 0;
     SCIP_Real gap_limit = 0;
+    SCIP_Longint time_spacing = 0;
     try
     {
         // Create program options.
@@ -50,6 +51,7 @@ SCIP_RETCODE start_solver(
             ("t,time-limit", "Time limit in seconds", cxxopts::value<SCIP_Real>())
             ("n,node-limit", "Maximum number of branch-and-bound nodes", cxxopts::value<SCIP_Longint>())
             ("g,gap-limit", "Solve to an optimality gap", cxxopts::value<SCIP_Real>())
+            ("s,time-spacing", "Time-spacing parameter", cxxopts::value<SCIP_Longint>())
         ;
         options.parse_positional({"file"});
 
@@ -91,6 +93,11 @@ SCIP_RETCODE start_solver(
         if (result.count("gap-limit"))
         {
             gap_limit = result["gap-limit"].as<SCIP_Real>();
+        }
+
+        if (result.count("time-spacing"))
+        {
+            time_spacing = result["time-spacing"].as<SCIP_Longint>();
         }
     }
     catch (const cxxopts::OptionException& e)
@@ -378,8 +385,8 @@ SCIP_RETCODE start_solver(
         println("");
         SCIP_CALL(SCIPprintStatistics(scip, NULL));
 
-        // Write best solution to file.
-        SCIP_CALL(write_best_solution(scip));
+        // // Write best solution to file.
+        // SCIP_CALL(write_best_solution(scip));
     }
 
     // Free memory.

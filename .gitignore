@@ -5,3 +5,7 @@
 scip*/
 build/
 outputs/
+*.cmake
+CMakeCache.txt
+CMakeFiles/
+boost*/
