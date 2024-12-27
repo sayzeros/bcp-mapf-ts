@@ -37,7 +37,7 @@ SCIP_RETCODE start_solver(
     SCIP_Real time_limit = 0;
     SCIP_Longint node_limit = 0;
     SCIP_Real gap_limit = 0;
-    SCIP_Longint time_spacing = 0;
+    int time_spacing = 0;
     try
     {
         // Create program options.
@@ -97,7 +97,7 @@ SCIP_RETCODE start_solver(
 
         if (result.count("time-spacing"))
         {
-            time_spacing = result["time-spacing"].as<SCIP_Longint>();
+            time_spacing = result["time-spacing"].as<int>();
         }
     }
     catch (const cxxopts::OptionException& e)
@@ -356,7 +356,7 @@ SCIP_RETCODE start_solver(
 
     // Read instance.
     release_assert(agent_limit > 0, "Cannot limit to {} number of agents", agent_limit);
-    SCIP_CALL(read_instance(scip, instance_file.c_str(), agent_limit));
+    SCIP_CALL(read_instance(scip, instance_file.c_str(), agent_limit, time_spacing));
 
     // Set time limit.
     if (time_limit > 0)

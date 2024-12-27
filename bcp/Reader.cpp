@@ -29,7 +29,8 @@ Author: Edward Lam <ed@ed-lam.com>
 SCIP_RETCODE read_instance(
     SCIP* scip,                                    // SCIP
     const std::filesystem::path& scenario_path,    // File path to scenario
-    const Agent nb_agents                          // Number of agents to read
+    const Agent nb_agents,                         // Number of agents to read
+    const int time_spacing                         // Time-spacing parameter
 )
 {
     // Get instance name.

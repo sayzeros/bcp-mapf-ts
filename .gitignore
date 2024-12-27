@@ -9,3 +9,6 @@ outputs/
 CMakeCache.txt
 CMakeFiles/
 boost*/
+Makefile
+bcp-mapf
+libcliquer.a

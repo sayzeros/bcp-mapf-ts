@@ -34,11 +34,12 @@ struct Instance
 
     Map map;
     AgentsData agents;
+    int time_spacing;
 
   public:
     // Constructors
     Instance() = default;
-    Instance(const std::filesystem::path& scenario_path, const Agent agent_limit = std::numeric_limits<Agent>::max());
+    Instance(const std::filesystem::path& scenario_path, const Agent agent_limit = std::numeric_limits<Agent>::max(), const int time_spacing = 0);
     Instance(const Instance&) = default;
     Instance(Instance&&) = default;
     Instance& operator=(const Instance&) = default;

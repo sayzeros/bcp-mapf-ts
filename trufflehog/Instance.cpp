@@ -126,11 +126,12 @@ void read_map(const std::filesystem::path& map_path, Map& map)
     map_file.close();
 }
 
-Instance::Instance(const std::filesystem::path& scenario_path, const Agent agent_limit) :
+Instance::Instance(const std::filesystem::path& scenario_path, const Agent agent_limit, const int time_spacing) :
     scenario_path(scenario_path),
     map_path(),
     map(),
-    agents()
+    agents(),
+    time_spacing(time_spacing)
 {
     // Read agents.
     Vector<AgentMapData> agents_map_data;
