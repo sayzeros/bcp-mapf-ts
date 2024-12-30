@@ -1148,6 +1148,30 @@ bcp/ConstraintHandler_EdgeConflicts.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/bcp-mapf.dir/build.make CMakeFiles/bcp-mapf.dir/bcp/ConstraintHandler_EdgeConflicts.cpp.s
 .PHONY : bcp/ConstraintHandler_EdgeConflicts.cpp.s
 
+bcp/ConstraintHandler_OldTimeSpacing.o: bcp/ConstraintHandler_OldTimeSpacing.cpp.o
+.PHONY : bcp/ConstraintHandler_OldTimeSpacing.o
+
+# target to build an object file
+bcp/ConstraintHandler_OldTimeSpacing.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bcp-mapf.dir/build.make CMakeFiles/bcp-mapf.dir/bcp/ConstraintHandler_OldTimeSpacing.cpp.o
+.PHONY : bcp/ConstraintHandler_OldTimeSpacing.cpp.o
+
+bcp/ConstraintHandler_OldTimeSpacing.i: bcp/ConstraintHandler_OldTimeSpacing.cpp.i
+.PHONY : bcp/ConstraintHandler_OldTimeSpacing.i
+
+# target to preprocess a source file
+bcp/ConstraintHandler_OldTimeSpacing.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bcp-mapf.dir/build.make CMakeFiles/bcp-mapf.dir/bcp/ConstraintHandler_OldTimeSpacing.cpp.i
+.PHONY : bcp/ConstraintHandler_OldTimeSpacing.cpp.i
+
+bcp/ConstraintHandler_OldTimeSpacing.s: bcp/ConstraintHandler_OldTimeSpacing.cpp.s
+.PHONY : bcp/ConstraintHandler_OldTimeSpacing.s
+
+# target to generate assembly for a file
+bcp/ConstraintHandler_OldTimeSpacing.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bcp-mapf.dir/build.make CMakeFiles/bcp-mapf.dir/bcp/ConstraintHandler_OldTimeSpacing.cpp.s
+.PHONY : bcp/ConstraintHandler_OldTimeSpacing.cpp.s
+
 bcp/ConstraintHandler_VertexConflicts.o: bcp/ConstraintHandler_VertexConflicts.cpp.o
 .PHONY : bcp/ConstraintHandler_VertexConflicts.o
 
@@ -2264,6 +2288,9 @@ help:
 	@echo "... bcp/ConstraintHandler_EdgeConflicts.o"
 	@echo "... bcp/ConstraintHandler_EdgeConflicts.i"
 	@echo "... bcp/ConstraintHandler_EdgeConflicts.s"
+	@echo "... bcp/ConstraintHandler_OldTimeSpacing.o"
+	@echo "... bcp/ConstraintHandler_OldTimeSpacing.i"
+	@echo "... bcp/ConstraintHandler_OldTimeSpacing.s"
 	@echo "... bcp/ConstraintHandler_VertexConflicts.o"
 	@echo "... bcp/ConstraintHandler_VertexConflicts.i"
 	@echo "... bcp/ConstraintHandler_VertexConflicts.s"

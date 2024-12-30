@@ -50,7 +50,8 @@ SCIP_RETCODE SCIPprobdataCreate(
     SCIP* scip,                       // SCIP
     const char* probname,             // Problem name
     SharedPtr<Instance>& instance,    // Instance
-    SharedPtr<AStar>& astar           // Search algorithm
+    SharedPtr<AStar>& astar,          // Search algorithm
+    int time_spacing                  // Time-spacing parameter
 );
 
 // Add a new variable from a primal heuristic
@@ -121,6 +122,11 @@ SCIP_CONS* SCIPprobdataGetVertexConflictsCons(
 
 // Get constraint for edge conflicts
 SCIP_CONS* SCIPprobdataGetEdgeConflictsCons(
+    SCIP_ProbData* probdata    // Problem data
+);
+
+// Get constraint for old time spacing
+SCIP_CONS* SCIPprobdataGetOldTimeSpacingCons(
     SCIP_ProbData* probdata    // Problem data
 );
 
@@ -261,6 +267,11 @@ Agent SCIPprobdataGetN(
 
 // Get the agents data
 const AgentsData& SCIPprobdataGetAgentsData(
+    SCIP_ProbData* probdata    // Problem data
+);
+
+// Get the time-spacing parameter
+int SCIPprobdataGetTimeSpacing(
     SCIP_ProbData* probdata    // Problem data
 );
 

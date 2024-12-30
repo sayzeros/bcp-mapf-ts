@@ -109,6 +109,18 @@ SCIP_RETCODE start_solver(
     println("Branch-and-cut-and-price for multi-agent path finding");
     println("Edward Lam <ed@ed-lam.com>");
     println("Monash University, Melbourne, Australia");
+
+
+#ifdef USE_OLD_TIME_SPACING
+    println("Using old time-spacing constraints");
+#endif
+#ifdef USE_NEW_TIME_SPACING
+    println("Using new time-spacing constraints");
+#endif
+#ifdef USE_TIME_RANGE
+    println("Using time-range constraints");
+#endif
+
 #ifdef DEBUG
     println("Compiled in debug mode");
 #ifdef USE_WAITEDGE_CONFLICTS

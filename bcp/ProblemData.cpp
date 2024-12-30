@@ -34,6 +34,9 @@ Author: Edward Lam <ed@ed-lam.com>
 #include "scip/cons_knapsack.h"
 #include "ConstraintHandler_VertexConflicts.h"
 #include "ConstraintHandler_EdgeConflicts.h"
+#ifdef USE_OLD_TIME_SPACING
+#include "ConstraintHandler_OldTimeSpacing.h"
+#endif
 #include "Separator_Preprocessing.h"
 #ifdef USE_RECTANGLE_KNAPSACK_CONFLICTS
 #include "Separator_RectangleKnapsackConflicts.h"
@@ -109,6 +112,7 @@ struct SCIP_ProbData
     // Instance data
     SharedPtr<Instance> instance;                                               // Instance
     Agent N;                                                                    // Number of agents
+    int time_spacing;                                                           // Time spacing parameter
 
     // Model data
     SCIP_PricerData* pricerdata;                                                // Pricer data
@@ -131,6 +135,9 @@ struct SCIP_ProbData
     Vector<SCIP_CONS*> agent_part;                                              // Agent partition constraints
     SCIP_CONS* vertex_conflicts;                                                // Constraint for vertex conflicts
     SCIP_CONS* edge_conflicts;                                                  // Constraint for edge conflicts
+#ifdef USE_OLD_TIME_SPACING
+    SCIP_CONS* old_time_spacing;                                                // Constraint for old time spacing
+#endif
     Vector<TwoAgentRobustCut> two_agent_robust_cuts;                            // Robust cuts over two agents
 #ifdef USE_RECTANGLE_KNAPSACK_CONFLICTS
     SCIP_SEPA* rectangle_knapsack_conflicts;                                    // Separator for rectangle knapsack conflicts
@@ -252,6 +259,15 @@ SCIP_DECL_PROBTRANS(probtrans)
     SCIP_CALL(SCIPtransformCons(scip,
                                 (*targetdata)->edge_conflicts,
                                 &(*targetdata)->edge_conflicts));
+
+#ifdef USE_OLD_TIME_SPACING
+    // Copy constraint for old time spacing.
+    debug_assert(sourcedata->old_time_spacing);
+    (*targetdata)->old_time_spacing = sourcedata->old_time_spacing;
+    SCIP_CALL(SCIPtransformCons(scip,
+                                (*targetdata)->old_time_spacing,
+                                &(*targetdata)->old_time_spacing));
+#endif
 
     // Allocate memory for two-agent robust cuts.
     debug_assert(sourcedata->two_agent_robust_cuts.empty());
@@ -584,6 +600,15 @@ SCIP_RETCODE SCIPprobdataAddHeuristicVar(
                                      path_length,
                                      path));
 
+#ifdef USE_OLD_TIME_SPACING
+    // Add coefficient to old time spacing constraints.
+    SCIP_CALL(old_time_spacing_add_var(scip,
+                                     probdata->old_time_spacing,
+                                     *var,
+                                     path_length,
+                                     path));
+#endif
+
     // Add coefficients to two-agent robust cuts.
     for (const auto& [row, ets_begin, ets_end] : probdata->agent_robust_cuts[a])
     {
@@ -744,6 +769,15 @@ SCIP_RETCODE SCIPprobdataAddInitialVar(
                                      path_length,
                                      path));
 
+#ifdef USE_OLD_TIME_SPACING
+    // Add coefficient to old time spacing constraints.
+    SCIP_CALL(old_time_spacing_add_var(scip,
+                                     probdata->old_time_spacing,
+                                     *var,
+                                     path_length,
+                                     path));
+#endif
+
     // Add coefficients to two-agent robust cuts.
     for (const auto& [row, ets_begin, ets_end] : probdata->agent_robust_cuts[a])
     {
@@ -886,6 +920,15 @@ SCIP_RETCODE SCIPprobdataAddPricedVar(
                                      *var,
                                      path_length,
                                      path));
+
+#ifdef USE_OLD_TIME_SPACING
+    // Add coefficient to old time spacing constraints.
+    SCIP_CALL(old_time_spacing_add_var(scip,
+                                     probdata->old_time_spacing,
+                                     *var,
+                                     path_length,
+                                     path));
+#endif
 
     // Add coefficients to two-agent robust cuts.
     for (const auto& [row, ets_begin, ets_end] : probdata->agent_robust_cuts[a])
@@ -1133,7 +1176,8 @@ SCIP_RETCODE SCIPprobdataCreate(
     SCIP* scip,                       // SCIP
     const char* probname,             // Problem name
     SharedPtr<Instance>& instance,    // Instance
-    SharedPtr<AStar>& astar           // Search algorithm
+    SharedPtr<AStar>& astar,          // Search algorithm
+    int time_spacing                  // Time spacing parameter
 )
 {
     // Check.
@@ -1199,6 +1243,7 @@ SCIP_RETCODE SCIPprobdataCreate(
     // Copy instance data.
     probdata->instance = instance;
     probdata->N = N;
+    probdata->time_spacing = time_spacing;
 
     // Copy model data.
     probdata->pricerdata = nullptr;
@@ -1267,6 +1312,25 @@ SCIP_RETCODE SCIPprobdataCreate(
                                           FALSE,
                                           FALSE));
     SCIP_CALL(SCIPaddCons(scip, probdata->edge_conflicts));
+
+#ifdef USE_OLD_TIME_SPACING
+    // Create the constraint handler for old time spacing.
+    SCIP_CALL(SCIPincludeConshdlrOldTimeSpacing(scip));
+    SCIP_CALL(SCIPcreateConsOldTimeSpacing(scip,
+                                          &probdata->old_time_spacing,
+                                          "old_time_spacing",
+                                          TRUE,
+                                          TRUE,
+                                          TRUE,
+                                          TRUE,
+                                          TRUE,
+                                          FALSE,
+                                          TRUE,
+                                          FALSE,
+                                          FALSE,
+                                          FALSE));
+    SCIP_CALL(SCIPaddCons(scip, probdata->old_time_spacing));
+#endif
 
     // Include separator for preprocessing dummy constraint.
     SCIP_CALL(SCIPincludeSepaPreprocessing(scip));
@@ -1471,6 +1535,18 @@ SCIP_CONS* SCIPprobdataGetEdgeConflictsCons(
     debug_assert(probdata->edge_conflicts);
     return probdata->edge_conflicts;
 }
+
+#ifdef USE_OLD_TIME_SPACING
+// Get constraint for old time spacing
+SCIP_CONS* SCIPprobdataGetOldTimeSpacing(
+    SCIP_ProbData* probdata    // Problem data
+)
+{
+    debug_assert(probdata);
+    debug_assert(probdata->old_time_spacing);
+    return probdata->old_time_spacing;
+}
+#endif
 
 // Get array of two-agent robust cuts
 Vector<TwoAgentRobustCut>& SCIPprobdataGetTwoAgentRobustCuts(
@@ -1970,6 +2046,14 @@ Agent SCIPprobdataGetN(
     debug_assert(probdata);
     debug_assert(probdata->N >= 1);
     return probdata->N;
+}
+
+int SCIPprobdataGetTimeSpacing(
+    SCIP_ProbData* probdata    // Problem data
+)
+{
+    debug_assert(probdata);
+    return probdata->time_spacing;
 }
 
 // Get the pricing solver

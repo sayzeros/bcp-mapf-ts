@@ -61,6 +61,8 @@ set(BCP_MAPF_SOURCE_FILES
     bcp/ConstraintHandler_VertexConflicts.cpp
     bcp/ConstraintHandler_EdgeConflicts.h
     bcp/ConstraintHandler_EdgeConflicts.cpp
+    bcp/ConstraintHandler_OldTimeSpacing.h
+    bcp/ConstraintHandler_OldTimeSpacing.cpp  # FIXME: Add other time spacing constraint handlers
     bcp/Separator.h
     bcp/Separator_Preprocessing.h
     bcp/Separator_Preprocessing.cpp
@@ -274,6 +276,11 @@ target_link_libraries(trufflehog fmt::fmt-header-only)
 # target_compile_options(bcp-mapf PRIVATE -DUSE_SIPP)
 target_compile_options(bcp-mapf PRIVATE -DUSE_RESERVATION_TABLE)
 target_compile_options(bcp-mapf PRIVATE -DUSE_ASTAR_SOLUTION_CACHING)
+
+# Set constraint handler options.
+target_compile_options(bcp-mapf PRIVATE -DUSE_OLD_TIME_SPACING)
+# target_compile_options(bcp-mapf PRIVATE -DUSE_NEW_TIME_SPACING)  # FIXME: Not implemented yet.
+# target_compile_options(bcp-mapf PRIVATE -DUSE_TIME_RANGE)  # FIXME: Not implemented yet.
 
 # Set separator options.
 target_compile_options(bcp-mapf PRIVATE -DUSE_WAITEDGE_CONFLICTS)

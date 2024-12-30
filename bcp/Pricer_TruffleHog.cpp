@@ -26,6 +26,9 @@ Author: Edward Lam <ed@ed-lam.com>
 #include "scip/cons_setppc.h"
 #include "ConstraintHandler_VertexConflicts.h"
 #include "ConstraintHandler_EdgeConflicts.h"
+#ifdef USE_OLD_TIME_SPACING
+#include "ConstraintHandler_OldTimeSpacing.h"
+#endif
 #include "Constraint_VertexBranching.h"
 //#include "Constraint_WaitBranching.h"
 #include "Constraint_LengthBranching.h"
@@ -348,6 +351,9 @@ SCIP_RETCODE run_trufflehog_pricer(
     const auto& agent_part = SCIPprobdataGetAgentPartConss(probdata);
     const auto& vertex_conflicts_conss = vertex_conflicts_get_constraints(probdata);
     const auto& edge_conflicts_conss = edge_conflicts_get_constraints(probdata);
+#ifdef USE_OLD_TIME_SPACING
+    const auto& old_time_spacing_conss = old_time_spacing_get_constraints(probdata);
+#endif
     const auto& agent_goal_vertex_conflicts = SCIPprobdataGetAgentGoalVertexConflicts(probdata);
 #ifdef USE_WAITEDGE_CONFLICTS
     const auto& agent_goal_edge_conflicts = SCIPprobdataGetAgentGoalEdgeConflicts(probdata);
@@ -461,7 +467,7 @@ SCIP_RETCODE run_trufflehog_pricer(
 //
 //                 // Search.
 //                 astar.preprocess_input();
-//                 astar.before_solve(); // TODO: Merge back in.
+//                 astar.before_solve();
 //                 astar.set_verbose();
 //                 const auto [path_vertices, path_cost] = astar.calculate_cost(input_path);
 //
@@ -585,6 +591,23 @@ SCIP_RETCODE run_trufflehog_pricer(
     }
 
     // Input dual values for edge conflicts.
+    for (const auto& [et, edge_conflict] : edge_conflicts_conss)
+    {
+        const auto& [row, edges, t] = edge_conflict;
+        const auto dual = is_farkas ? SCIProwGetDualfarkas(row) : SCIProwGetDualsol(row);
+        debug_assert(SCIPisFeasLE(scip, dual, 0.0));
+        if (SCIPisFeasLT(scip, dual, 0.0))
+        {
+            // Add the dual variable value to the edges.
+            for (const auto e : edges)
+            {
+                auto& penalties = global_edge_penalties.get_edge_penalties(e.n, t);
+                penalties.d[e.d] -= dual;
+            }
+        }
+    }
+
+    // Input dual values for old time spacing. TODO:
     for (const auto& [et, edge_conflict] : edge_conflicts_conss)
     {
         const auto& [row, edges, t] = edge_conflict;
@@ -863,7 +886,7 @@ SCIP_RETCODE run_trufflehog_pricer(
 #endif
 
         // Solve.
-        astar.before_solve(); // TODO: Merge back in.
+        astar.before_solve(); 
 #ifdef USE_SIPP
         std::tie(path_vertices, path_cost) = astar.solve_sipp<is_farkas>();
 #ifdef DEBUG

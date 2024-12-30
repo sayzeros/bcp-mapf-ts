@@ -37,7 +37,7 @@ SCIP_RETCODE read_instance(
     auto instance_name = scenario_path.stem().string();
     if (nb_agents < std::numeric_limits<Agent>::max())
     {
-        instance_name += fmt::format("-{}agents", nb_agents);
+        instance_name += fmt::format("-{}agents-{}ts", nb_agents, time_spacing);
     }
 
     // Load instance.
@@ -47,7 +47,7 @@ SCIP_RETCODE read_instance(
     auto astar = std::make_shared<AStar>(instance->map);
 
     // Create the problem.
-    SCIP_CALL(SCIPprobdataCreate(scip, instance_name.c_str(), instance, astar));
+    SCIP_CALL(SCIPprobdataCreate(scip, instance_name.c_str(), instance, astar, time_spacing));
 
     // Done.
     return SCIP_OKAY;
