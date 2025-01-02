@@ -122,25 +122,41 @@ SCIP_RETCODE old_time_spacing_create_cut(
         auto vardata = SCIPvarGetData(var);
         const auto path_length = SCIPvardataGetPathLength(vardata);
         const auto path = SCIPvardataGetPath(vardata);
+        const auto a = SCIPvardataGetAgent(vardata);
         debug_assert(var_val == SCIPgetSolVal(scip, nullptr, var));
 
-//TODO: 여기부터 수정필요한듯?
         // Add coefficients.
-        if ((nt.t < path_length && path[nt.t].n == nt.n) ||
-            (nt.t >= path_length && path[path_length - 1].n == nt.n))
+        if  (nta.a == a && path[nta.t].n == nta.n)
         {
-            // Print.
-            debugln("      Agent: {:2d}, Val: {:7.4f}, Path: {}",
-                    SCIPvardataGetAgent(vardata),
-                    var_val,
-                    format_path_spaced(SCIPgetProbData(scip), path_length, path));
-
             // Add the coefficient.
             SCIP_CALL(SCIPaddVarToRow(scip, row, var, 1.0));
-#ifdef DEBUG
-            lhs += var_val;
-#endif
         }
+        else if (nta.a != a)
+        {
+          for (int h = 0; h <= ts; h++)
+          {
+            if (nta.t + h < path_length && path[nta.t + h].n == nta.n)
+            {
+              // Add the coefficient.
+              SCIP_CALL(SCIPaddVarToRow(scip, row, var, 1.0 / ((double) ts + 1)));
+            }
+          }
+        }
+//         if ((nt.t < path_length && path[nt.t].n == nt.n) ||
+//             (nt.t >= path_length && path[path_length - 1].n == nt.n))
+//         {
+//             // Print.
+//             debugln("      Agent: {:2d}, Val: {:7.4f}, Path: {}",
+//                     SCIPvardataGetAgent(vardata),
+//                     var_val,
+//                     format_path_spaced(SCIPgetProbData(scip), path_length, path));
+
+//             // Add the coefficient.
+//             SCIP_CALL(SCIPaddVarToRow(scip, row, var, 1.0));
+// #ifdef DEBUG
+//             lhs += var_val;
+// #endif
+//         }
     }
     SCIP_CALL(SCIPflushRowExtensions(scip, row));
 #ifdef DEBUG
@@ -173,14 +189,14 @@ SCIP_RETCODE old_time_spacing_create_cut(
     // }
 
     // Store the constraint.
-    debug_assert(consdata->conflicts.find(nt) == consdata->conflicts.end());
-    consdata->conflicts[nt] = {row};
+    debug_assert(consdata->conflicts.find(nta) == consdata->conflicts.end());
+    consdata->conflicts[nta] = {row};
 
     // Done.
     return SCIP_OKAY;
 }
 
-// Checker
+// Checker (check whether the solution violates the old_time_spacing constraints or not)
 static
 SCIP_RETCODE old_time_spacing_check(
     SCIP* scip,            // SCIP
@@ -197,28 +213,11 @@ SCIP_RETCODE old_time_spacing_check(
 
     // Get variables.
     const auto& vars = SCIPprobdataGetVars(probdata);
+    const auto ts = SCIPprobdataGetTimeSpacing(probdata);
+    const auto N = SCIPprobdataGetN(probdata);
 
-    // Find the makespan.
-    Time makespan = 0;
-    for (const auto& [var, _] : vars)
-    {
-        // Get the path length.
-        debug_assert(var);
-        auto vardata = SCIPvarGetData(var);
-        const auto path_length = SCIPvardataGetPathLength(vardata);
-
-        // Get the variable value.
-        const auto var_val = SCIPgetSolVal(scip, sol, var);
-
-        // Store the length of the longest path.
-        if (path_length > makespan && SCIPisPositive(scip, var_val))
-        {
-            makespan = path_length;
-        }
-    }
-
-    // Calculate the number of times a vertex is used by summing the columns.
-    HashTable<NodeTime, SCIP_Real> vertex_times_used;
+    // Calculate the LHS of old_time_spacing constraints by summing the columns.
+    HashTable<NodeTimeAgent, SCIP_Real> lhs;
     for (const auto& [var, _] : vars)
     {
         // Get the path.
@@ -226,6 +225,7 @@ SCIP_RETCODE old_time_spacing_check(
         auto vardata = SCIPvarGetData(var);
         const auto path_length = SCIPvardataGetPathLength(vardata);
         const auto path = SCIPvardataGetPath(vardata);
+        const auto a = SCIPvardataGetAgent(vardata);
 
         // Get the variable value.
         const auto var_val = SCIPgetSolVal(scip, sol, var);
@@ -233,35 +233,30 @@ SCIP_RETCODE old_time_spacing_check(
         // Sum vertex value.
         if (SCIPisPositive(scip, var_val))
         {
-            Time t = 1;
-            for (; t < path_length; ++t)
+            for (Time t = 0; t < path_length; ++t)
             {
-                const NodeTime nt{path[t].n, t};
-                vertex_times_used[nt] += var_val;
-            }
-            const auto n = path[path_length - 1].n;
-            for (; t < makespan; ++t)
-            {
-                const NodeTime nt{n, t};
-                vertex_times_used[nt] += var_val;
+                const NodeTimeAgent nta{path[t].n, t, a};
+                lhs[nta] += var_val;
+                for (Agent aa = 0; aa < N; aa++)
+                {
+                  if (aa == a) continue;
+                  for (int h = 0; h <= ts; h++)
+                  {
+                    if (t - h >= 0)
+                    {
+                      const NodeTimeAgent nta{path[t].n, t - h, aa};
+                      lhs[nta] += var_val / ((double) ts + 1);
+                    }
+                  }
+                }
             }
         }
     }
 
     // Check for conflicts.
-    for (const auto [nt, val] : vertex_times_used)
+    for (const auto [nt, val] : lhs)
         if (SCIPisSumGT(scip, val, 1.0))
         {
-            // Print.
-#ifdef PRINT_DEBUG
-            {
-                const auto& map = SCIPprobdataGetMap(probdata);
-                const auto [x, y] = map.get_xy(nt.n);
-                debugln("   Infeasible solution has vertex (({},{}),{}) with value {}",
-                        x, y, nt.t, val);
-            }
-#endif
-
             // Infeasible.
             *result = SCIP_INFEASIBLE;
             return SCIP_OKAY;
@@ -271,6 +266,7 @@ SCIP_RETCODE old_time_spacing_check(
     return SCIP_OKAY;
 }
 
+//TODO: 여기부터 수정필요한듯?
 // Separator
 static
 SCIP_RETCODE old_time_spacing_separate(
@@ -295,6 +291,8 @@ SCIP_RETCODE old_time_spacing_separate(
 
     // Get problem data.
     auto probdata = SCIPgetProbData(scip);
+    const auto ts = SCIPprobdataGetTimeSpacing(probdata);
+    const auto N = SCIPprobdataGetN(probdata);
 
     // Update variable values.
     update_variable_values(scip);
@@ -302,54 +300,45 @@ SCIP_RETCODE old_time_spacing_separate(
     // Get variables.
     const auto& vars = SCIPprobdataGetVars(probdata);
 
-    // Find the makespan.
-    Time makespan = 0;
-    for (const auto& [var, var_val] : vars)
-    {
-        // Get the path length.
-        debug_assert(var);
-        auto vardata = SCIPvarGetData(var);
-        const auto path_length = SCIPvardataGetPathLength(vardata);
-
-        // Store the length of the longest path.
-        debug_assert(var_val == SCIPgetSolVal(scip, sol, var));
-        if (path_length > makespan && SCIPisPositive(scip, var_val))
-        {
-            makespan = path_length;
-        }
-    }
-
-    // Calculate the number of times a vertex is used by summing the columns.
-    HashTable<NodeTime, SCIP_Real> vertex_used;
-    for (const auto& [var, var_val] : vars)
+    // Calculate the lhs of old_time_spacing constraints by summing the columns.
+    HashTable<NodeTimeAgent, SCIP_Real> lhs;
+    for (const auto& [var, _] : vars)
     {
         // Get the path.
         debug_assert(var);
         auto vardata = SCIPvarGetData(var);
         const auto path_length = SCIPvardataGetPathLength(vardata);
         const auto path = SCIPvardataGetPath(vardata);
+        const auto a = SCIPvardataGetAgent(vardata);
+
+        // Get the variable value.
+        const auto var_val = SCIPgetSolVal(scip, sol, var);
 
         // Sum vertex value.
-        debug_assert(var_val == SCIPgetSolVal(scip, sol, var));
         if (SCIPisPositive(scip, var_val))
         {
-            Time t = 1;
-            for (; t < path_length; ++t)
+            for (Time t = 0; t < path_length; ++t)
             {
-                const NodeTime nt{path[t].n, t};
-                vertex_used[nt] += var_val;
-            }
-            const auto n = path[path_length - 1].n;
-            for (; t < makespan; ++t)
-            {
-                const NodeTime nt{n, t};
-                vertex_used[nt] += var_val;
+                const NodeTimeAgent nta{path[t].n, t, a};
+                lhs[nta] += var_val;
+                for (Agent aa = 0; aa < N; aa++)
+                {
+                  if (aa == a) continue;
+                  for (int h = 0; h <= ts; h++)
+                  {
+                    if (t - h >= 0)
+                    {
+                      const NodeTimeAgent nta{path[t].n, t - h, aa};
+                      lhs[nta] += var_val / ((double) ts + 1);
+                    }
+                  }
+                }
             }
         }
     }
 
     // Create cuts.
-    for (const auto [nt, val] : vertex_used)
+    for (const auto [nta, val] : lhs)
         if (SCIPisSumGT(scip, val, 1.0))
         {
             // Print.
@@ -363,7 +352,7 @@ SCIP_RETCODE old_time_spacing_separate(
 #endif
 
             // Reactive the cut if it already exists. Otherwise create the cut.
-            if (auto it = consdata->conflicts.find(nt); it != consdata->conflicts.end())
+            if (auto it = consdata->conflicts.find(nta); it != consdata->conflicts.end())
             {
                 // Reactivate the row if it is not in the LP.
                 const auto& [row] = it->second;
@@ -376,13 +365,13 @@ SCIP_RETCODE old_time_spacing_separate(
                 else
                 {
                     release_assert(SCIPisSumLE(scip, val, 1.0 + 1e-6),
-                                   "Vertex conflict constraint is violated but is already active");
+                                   "Old time spacing conflict constraint is violated but is already active");
                 }
             }
             else
             {
                 // Create cut.
-                SCIP_CALL(old_time_spacing_create_cut(scip, cons, consdata, nt, vars, result));
+                SCIP_CALL(old_time_spacing_create_cut(scip, cons, consdata, nta, vars, result));
             }
         }
 
@@ -498,7 +487,7 @@ SCIP_DECL_CONSTRANS(consTransOldTimeSpacing)
 
     // Must begin with no old time spacing.
     release_assert(sourcedata->conflicts.empty(),
-                   "Vertex conflicts exist in original problem before transformation");
+                   "old time spacing ctrs exist in original problem before transformation");
 
     // Create constraint.
     char name[SCIP_MAXSTRLEN];
@@ -800,17 +789,30 @@ SCIP_RETCODE old_time_spacing_add_var(
     debug_assert(SCIPconsIsTransformed(cons));
     debug_assert(SCIPvarIsTransformed(var));
 
+    // Get necessary data
+    const auto a = SCIPvardataGetAgent(SCIPvarGetData(var));
+    const auto ts = SCIPprobdataGetTimeSpacing(SCIPgetProbData(scip));
+
     // Add rounding lock to the new variable.
     SCIP_CALL(SCIPlockVarCons(scip, var, cons, FALSE, TRUE));
 
     // Add variable to constraints.  FIXME:
-    for (const auto& [nt, old_time_spacing] : consdata->conflicts)
+    for (const auto& [nta, old_time_spacing] : consdata->conflicts)
     {
         const auto& [row] = old_time_spacing;
-        if ((nt.t < path_length && path[nt.t].n == nt.n) ||
-            (nt.t >= path_length && path[path_length - 1].n == nt.n))
+        if (nta.a == a && nta.t < path_length && path[nta.t].n == nta.n)
         {
             SCIP_CALL(SCIPaddVarToRow(scip, row, var, 1.0));
+        }
+        else if (nta.a != a)
+        {
+          for (int h = 0; h <= ts; h++)
+          {
+            if (nta.t + h < path_length && path[nta.t + h].n == nta.n)
+            {
+              SCIP_CALL(SCIPaddVarToRow(scip, row, var, 1.0 / ((double) ts + 1)));
+            }
+          }
         }
     }
 

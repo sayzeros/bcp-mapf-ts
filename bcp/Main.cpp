@@ -51,7 +51,7 @@ SCIP_RETCODE start_solver(
             ("t,time-limit", "Time limit in seconds", cxxopts::value<SCIP_Real>())
             ("n,node-limit", "Maximum number of branch-and-bound nodes", cxxopts::value<SCIP_Longint>())
             ("g,gap-limit", "Solve to an optimality gap", cxxopts::value<SCIP_Real>())
-            ("s,time-spacing", "Time-spacing parameter", cxxopts::value<SCIP_Longint>())
+            ("s,time-spacing", "Time-spacing parameter", cxxopts::value<int>())
         ;
         options.parse_positional({"file"});
 

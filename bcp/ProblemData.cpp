@@ -1538,7 +1538,7 @@ SCIP_CONS* SCIPprobdataGetEdgeConflictsCons(
 
 #ifdef USE_OLD_TIME_SPACING
 // Get constraint for old time spacing
-SCIP_CONS* SCIPprobdataGetOldTimeSpacing(
+SCIP_CONS* SCIPprobdataGetOldTimeSpacingCons(
     SCIP_ProbData* probdata    // Problem data
 )
 {
