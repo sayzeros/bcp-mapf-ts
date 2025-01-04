@@ -48,9 +48,9 @@ union NodeTimeAgent
 {
     struct
     {
-        Node n;
-        Time t;
-        Agent a;
+        Node n : 32;
+        Time t : 24;
+        Agent a : 8;
     };
     uint64_t nta;
 
@@ -68,17 +68,20 @@ inline bool operator!=(const NodeTimeAgent a, const NodeTimeAgent b)
 {
     return a.nta != b.nta;
 }
-
 }
 
+
+namespace robin_hood
+{
 template<>
-struct robin_hood::hash<TruffleHog::NodeTimeAgent>
+struct hash<TruffleHog::NodeTimeAgent>
 {
     inline std::size_t operator()(const TruffleHog::NodeTimeAgent nta) const noexcept
     {
         return robin_hood::hash<uint64_t>{}(nta.nta);
     }
 };
+}
 
 template<>
 struct fmt::formatter<TruffleHog::NodeTimeAgent>

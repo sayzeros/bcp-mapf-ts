@@ -6,9 +6,9 @@
 
 #define CONSHDLR_NAME          "old_time_spacing"
 #define CONSHDLR_DESC          "Constraint handler for old time spacing"
-#define CONSHDLR_SEPAPRIORITY  11         // priority of the constraint handler for separation
-#define CONSHDLR_ENFOPRIORITY  -900000    // priority of the constraint handler for constraint enforcing
-#define CONSHDLR_CHECKPRIORITY -900000    // priority of the constraint handler for checking feasibility
+#define CONSHDLR_SEPAPRIORITY  9         // priority of the constraint handler for separation
+#define CONSHDLR_ENFOPRIORITY  -1100000    // priority of the constraint handler for constraint enforcing
+#define CONSHDLR_CHECKPRIORITY -1100000    // priority of the constraint handler for checking feasibility
 #define CONSHDLR_SEPAFREQ      1          // frequency for separating cuts; zero means to separate only in the root node
 #define CONSHDLR_EAGERFREQ     1          // frequency for using all instead of only the useful constraints in separation,
                                           // propagation and enforcement, -1 for no eager evaluations, 0 for first only
@@ -84,7 +84,7 @@ SCIP_RETCODE old_time_spacing_create_cut(
     auto probdata = SCIPgetProbData(scip);
     const auto N = SCIPprobdataGetN(probdata);
     const auto& agents = SCIPprobdataGetAgentsData(probdata);
-    const auto ts = SCIPprobdataGetTimeSpacing(probdata);
+    auto ts = SCIPprobdataGetTimeSpacing(probdata);
 
     // Create constraint name.
 #ifdef DEBUG
@@ -142,21 +142,6 @@ SCIP_RETCODE old_time_spacing_create_cut(
             }
           }
         }
-//         if ((nt.t < path_length && path[nt.t].n == nt.n) ||
-//             (nt.t >= path_length && path[path_length - 1].n == nt.n))
-//         {
-//             // Print.
-//             debugln("      Agent: {:2d}, Val: {:7.4f}, Path: {}",
-//                     SCIPvardataGetAgent(vardata),
-//                     var_val,
-//                     format_path_spaced(SCIPgetProbData(scip), path_length, path));
-
-//             // Add the coefficient.
-//             SCIP_CALL(SCIPaddVarToRow(scip, row, var, 1.0));
-// #ifdef DEBUG
-//             lhs += var_val;
-// #endif
-//         }
     }
     SCIP_CALL(SCIPflushRowExtensions(scip, row));
 #ifdef DEBUG
@@ -176,17 +161,6 @@ SCIP_RETCODE old_time_spacing_create_cut(
     {
         *result = SCIP_SEPARATED;
     }
-
-    // // Store the constraint by agent if the vertex conflict is at the goal of an agent.
-    // {
-    //     auto& agent_goal_vertex_conflicts = SCIPprobdataGetAgentGoalVertexConflicts(probdata);
-    //     for (Agent a = 0; a < N; ++a)
-    //         if (nt.n == agents[a].goal)
-    //         {
-    //             agent_goal_vertex_conflicts[a].push_back({nt.t, row});
-    //             break;
-    //         }
-    // }
 
     // Store the constraint.
     debug_assert(consdata->conflicts.find(nta) == consdata->conflicts.end());
@@ -230,7 +204,7 @@ SCIP_RETCODE old_time_spacing_check(
         // Get the variable value.
         const auto var_val = SCIPgetSolVal(scip, sol, var);
 
-        // Sum vertex value.
+        // Sum lhs value.
         if (SCIPisPositive(scip, var_val))
         {
             for (Time t = 0; t < path_length; ++t)
@@ -242,7 +216,7 @@ SCIP_RETCODE old_time_spacing_check(
                   if (aa == a) continue;
                   for (int h = 0; h <= ts; h++)
                   {
-                    if (t - h >= 0)
+                    // if (t - h >= 0)
                     {
                       const NodeTimeAgent nta{path[t].n, t - h, aa};
                       lhs[nta] += var_val / ((double) ts + 1);
@@ -266,7 +240,6 @@ SCIP_RETCODE old_time_spacing_check(
     return SCIP_OKAY;
 }
 
-//TODO: 여기부터 수정필요한듯?
 // Separator
 static
 SCIP_RETCODE old_time_spacing_separate(
@@ -302,6 +275,7 @@ SCIP_RETCODE old_time_spacing_separate(
 
     // Calculate the lhs of old_time_spacing constraints by summing the columns.
     HashTable<NodeTimeAgent, SCIP_Real> lhs;
+    // println("lhs[144958, 387, 0] = {}", lhs[NodeTimeAgent{144958, 387, 0}]);
     for (const auto& [var, _] : vars)
     {
         // Get the path.
@@ -314,43 +288,45 @@ SCIP_RETCODE old_time_spacing_separate(
         // Get the variable value.
         const auto var_val = SCIPgetSolVal(scip, sol, var);
 
-        // Sum vertex value.
+        // Sum lhs value.
         if (SCIPisPositive(scip, var_val))
         {
+            // println("b lhs[144958, 387, 0] = {}", lhs[NodeTimeAgent{144958, 387, 0}]);
             for (Time t = 0; t < path_length; ++t)
             {
                 const NodeTimeAgent nta{path[t].n, t, a};
                 lhs[nta] += var_val;
+                // if (nta.n == 144958 && nta.t == 387 && nta.a == 0)
+                // {
+                //   println("added {} {} {}  : {}  {}", nta.n, nta.t, nta.a, var_val, lhs[nta]);
+                // }
                 for (Agent aa = 0; aa < N; aa++)
                 {
                   if (aa == a) continue;
                   for (int h = 0; h <= ts; h++)
                   {
-                    if (t - h >= 0)
-                    {
-                      const NodeTimeAgent nta{path[t].n, t - h, aa};
-                      lhs[nta] += var_val / ((double) ts + 1);
-                    }
+                      const NodeTimeAgent nta2{path[t].n, t - h, aa};
+                      lhs[nta2] += var_val / ((double) ts + 1);
+                      // if (nta2.n == 144958 && nta2.t == 387 && nta2.a == 0)
+                      // {
+                      //   println("added {} {} {}  : {}  {}", nta2.n, nta2.t, nta2.a, var_val / ((double) ts + 1), lhs[nta2]);
+                      // }
+                      // if (robin_hood::hash<uint64_t>{}(nta2.nta) == robin_hood::hash<uint64_t>{}(NodeTimeAgent{144958, 387, 0}.nta))
+                      // {
+                      //   println("fuck {} {} {}  : {}  {}", nta2.n, nta2.t, nta2.a, var_val / ((double) ts + 1), lhs[nta2]);
+                      // }
                   }
                 }
             }
+            // println("a lhs[144958, 387, 0] = {}", lhs[NodeTimeAgent{144958, 387, 0}]);
         }
     }
 
     // Create cuts.
+    // println("lhs[144958, 387, 0] = {}", lhs[NodeTimeAgent{144958, 387, 0}]);
     for (const auto [nta, val] : lhs)
         if (SCIPisSumGT(scip, val, 1.0))
         {
-            // Print.
-#ifdef PRINT_DEBUG
-            {
-                const auto& map = SCIPprobdataGetMap(probdata);
-                const auto [x, y] = map.get_xy(nt.n);
-                debugln("   Creating vertex conflict cut on (({},{}),{}) with value {} in branch-and-bound node {}",
-                        x, y, nt.t, val, SCIPnodeGetNumber(SCIPgetCurrentNode(scip)));
-            }
-#endif
-
             // Reactive the cut if it already exists. Otherwise create the cut.
             if (auto it = consdata->conflicts.find(nta); it != consdata->conflicts.end())
             {
@@ -364,6 +340,7 @@ SCIP_RETCODE old_time_spacing_separate(
                 }
                 else
                 {
+                    println("old_time_spacing ctrs {} {} {}  : {}", nta.n, nta.t, nta.a, val);
                     release_assert(SCIPisSumLE(scip, val, 1.0 + 1e-6),
                                    "Old time spacing conflict constraint is violated but is already active");
                 }
@@ -773,7 +750,7 @@ SCIP_RETCODE SCIPincludeConshdlrOldTimeSpacing(
 
 SCIP_RETCODE old_time_spacing_add_var(
     SCIP* scip,                 // SCIP
-    SCIP_CONS* cons,            // Vertex conflicts constraint
+    SCIP_CONS* cons,            // old_time_spacing constraint
     SCIP_VAR* var,              // Variable
     const Time path_length,     // Path length
     const Edge* const path      // Path
@@ -792,11 +769,12 @@ SCIP_RETCODE old_time_spacing_add_var(
     // Get necessary data
     const auto a = SCIPvardataGetAgent(SCIPvarGetData(var));
     const auto ts = SCIPprobdataGetTimeSpacing(SCIPgetProbData(scip));
+    
 
     // Add rounding lock to the new variable.
     SCIP_CALL(SCIPlockVarCons(scip, var, cons, FALSE, TRUE));
 
-    // Add variable to constraints.  FIXME:
+    // Add variable to constraints. 
     for (const auto& [nta, old_time_spacing] : consdata->conflicts)
     {
         const auto& [row] = old_time_spacing;

@@ -184,6 +184,7 @@ SCIP_DECL_PROBTRANS(probtrans)
     // Copy instance data.
     (*targetdata)->instance = sourcedata->instance;
     (*targetdata)->N = sourcedata->N;
+    (*targetdata)->time_spacing = sourcedata->time_spacing;
 
     // Copy model data.
     (*targetdata)->pricerdata = sourcedata->pricerdata;

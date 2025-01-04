@@ -607,24 +607,8 @@ SCIP_RETCODE run_trufflehog_pricer(
         }
     }
 
-    // Input dual values for old time spacing. TODO:
-    for (const auto& [et, edge_conflict] : edge_conflicts_conss)
-    {
-        const auto& [row, edges, t] = edge_conflict;
-        const auto dual = is_farkas ? SCIProwGetDualfarkas(row) : SCIProwGetDualsol(row);
-        debug_assert(SCIPisFeasLE(scip, dual, 0.0));
-        if (SCIPisFeasLT(scip, dual, 0.0))
-        {
-            // Add the dual variable value to the edges.
-            for (const auto e : edges)
-            {
-                auto& penalties = global_edge_penalties.get_edge_penalties(e.n, t);
-                penalties.d[e.d] -= dual;
-            }
-        }
-    }
-
     // Price each agent.
+    const auto ts = SCIPprobdataGetTimeSpacing(probdata);
     Float min_reduced_cost = 0;
 #ifdef PRINT_DEBUG
     Int nb_new_cols = 0;
@@ -644,6 +628,7 @@ SCIP_RETCODE run_trufflehog_pricer(
         const auto a = order[order_idx].a;
         start = agents[a].start;
         goal = agents[a].goal;
+        edge_penalties = global_edge_penalties;
 
         // Input the agent partition dual.
         {
@@ -663,8 +648,80 @@ SCIP_RETCODE run_trufflehog_pricer(
             cost_offset = -dual;
         }
 
+        // Input dual values for old time spacing. TODO:
+#ifdef USE_OLD_TIME_SPACING
+        for (const auto& [nta, old_time_spacing_conflict] : old_time_spacing_conss)
+        {
+            const auto& [row] = old_time_spacing_conflict;
+            const auto dual = is_farkas ? SCIProwGetDualfarkas(row) : SCIProwGetDualsol(row);
+            debug_assert(SCIPisFeasLE(scip, dual, 0.0));
+            if (SCIPisFeasLT(scip, dual, 0.0))
+            {
+                // Add the dual variable value to the edges leading into the vertex.
+                if (nta.a == a){
+                    const auto t = nta.t - 1;
+                    {
+                        const auto n = map.get_south(nta.n);
+                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                        penalties.north -= dual;
+                    }
+                    {
+                        const auto n = map.get_north(nta.n);
+                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                        penalties.south -= dual;
+                    }
+                    {
+                        const auto n = map.get_west(nta.n);
+                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                        penalties.east -= dual;
+                    }
+                    {
+                        const auto n = map.get_east(nta.n);
+                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                        penalties.west -= dual;
+                    }
+                    {
+                        const auto n = map.get_wait(nta.n);
+                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                        penalties.wait -= dual;
+                    }
+                }
+                else
+                {
+                  for (Time t = nta.t - 1; t <= nta.t - 1 + ts; t++)
+                  {
+                    {
+                        const auto n = map.get_south(nta.n);
+                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                        penalties.north -= dual / ((double) ts + 1);
+                    }
+                    {
+                        const auto n = map.get_north(nta.n);
+                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                        penalties.south -= dual / ((double) ts + 1);
+                    }
+                    {
+                        const auto n = map.get_west(nta.n);
+                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                        penalties.east -= dual / ((double) ts + 1);
+                    }
+                    {
+                        const auto n = map.get_east(nta.n);
+                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                        penalties.west -= dual / ((double) ts + 1);
+                    }
+                    {
+                        const auto n = map.get_wait(nta.n);
+                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                        penalties.wait -= dual / ((double) ts + 1);
+                    }
+                  }
+                }
+            }
+        }
+#endif
+
         // Modify edge costs for two-agent robust cuts.
-        edge_penalties = global_edge_penalties;
         finish_time_penalties.clear();
 #ifdef USE_GOAL_CONFLICTS
         goal_penalties.clear();
