@@ -156,8 +156,8 @@ SCIP_RETCODE edge_conflicts_create_cut(
 
         // Add coefficients.
 #ifdef USE_WAITEDGE_CONFLICTS
-        if ((t < path_length - 1 && (path[t] == edges[0] || path[t] == edges[1] || path[t] == edges[2])) ||
-            (t >= path_length - 1 && path[path_length - 1].n == edges[2].n))
+        if ((t < path_length - 1 && (path[t] == edges[0] || path[t] == edges[1] || path[t] == edges[2])))// ||
+            // (t >= path_length - 1 && path[path_length - 1].n == edges[2].n))
 #else
         if (t < path_length - 1 && (path[t] == edges[0] || path[t] == edges[1]))
 #endif
@@ -322,22 +322,22 @@ SCIP_RETCODE edge_conflicts_separate(
     // Get variables.
     const auto& vars = SCIPprobdataGetVars(probdata);
 
-    // Find the makespan.
-    Time makespan = 0;
-    for (const auto& [var, var_val] : vars)
-    {
-        // Get the path length.
-        debug_assert(var);
-        auto vardata = SCIPvarGetData(var);
-        const auto path_length = SCIPvardataGetPathLength(vardata);
+    // // Find the makespan.
+    // Time makespan = 0;
+    // for (const auto& [var, var_val] : vars)
+    // {
+    //     // Get the path length.
+    //     debug_assert(var);
+    //     auto vardata = SCIPvarGetData(var);
+    //     const auto path_length = SCIPvardataGetPathLength(vardata);
 
-        // Store the length of the longest path.
-        debug_assert(var_val == SCIPgetSolVal(scip, sol, var));
-        if (path_length > makespan && SCIPisPositive(scip, var_val))
-        {
-            makespan = path_length;
-        }
-    }
+    //     // Store the length of the longest path.
+    //     debug_assert(var_val == SCIPgetSolVal(scip, sol, var));
+    //     if (path_length > makespan && SCIPisPositive(scip, var_val))
+    //     {
+    //         makespan = path_length;
+    //     }
+    // }
 
     // Calculate the number of times an edge is used by summing the columns.
     HashTable<EdgeTime, SCIP_Real> edge_used;
@@ -365,7 +365,7 @@ SCIP_RETCODE edge_conflicts_separate(
                 }
             }
 #ifdef USE_WAITEDGE_CONFLICTS
-            const Edge e{path[path_length - 1].n, Direction::WAIT};
+            // const Edge e{path[path_length - 1].n, Direction::WAIT};
             // for (; t < makespan - 1; ++t)
             // {
             //     const EdgeTime et{e, t};

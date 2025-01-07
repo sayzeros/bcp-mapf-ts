@@ -143,8 +143,7 @@ SCIP_RETCODE vertex_conflicts_create_cut(
         debug_assert(var_val == SCIPgetSolVal(scip, nullptr, var));
 
         // Add coefficients.
-        if ((nt.t < path_length && path[nt.t].n == nt.n))// ||
-            // (nt.t >= path_length && path[path_length - 1].n == nt.n))
+        if ((nt.t < path_length && path[nt.t].n == nt.n))// || (nt.t >= path_length && path[path_length - 1].n == nt.n))
         {
             // Print.
             debugln("      Agent: {:2d}, Val: {:7.4f}, Path: {}",
@@ -824,8 +823,7 @@ SCIP_RETCODE vertex_conflicts_add_var(
     for (const auto& [nt, vertex_conflict] : consdata->conflicts)
     {
         const auto& [row] = vertex_conflict;
-        if ((nt.t < path_length && path[nt.t].n == nt.n)) //||
-            // (nt.t >= path_length && path[path_length - 1].n == nt.n))
+        if ((nt.t < path_length && path[nt.t].n == nt.n)) //|| (nt.t >= path_length && path[path_length - 1].n == nt.n))
         {
             SCIP_CALL(SCIPaddVarToRow(scip, row, var, 1.0));
         }

@@ -338,6 +338,9 @@ SCIP_RETCODE start_solver(
             {
                 auto heur = heurs[idx];
                 const String name(SCIPheurGetName(heur));
+#ifdef SOLVE_LP
+                SCIPheurSetFreq(heur, -1);
+#else
                 if (name == "alns" ||
                     name == "bound" ||
                     name == "coefdiving" ||
@@ -362,6 +365,7 @@ SCIP_RETCODE start_solver(
                 {
                     SCIPheurSetFreq(heur, -1);
                 }
+#endif
             }
         }
     }

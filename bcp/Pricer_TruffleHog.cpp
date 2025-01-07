@@ -354,10 +354,10 @@ SCIP_RETCODE run_trufflehog_pricer(
 #ifdef USE_OLD_TIME_SPACING
     const auto& old_time_spacing_conss = old_time_spacing_get_constraints(probdata);
 #endif
-    const auto& agent_goal_vertex_conflicts = SCIPprobdataGetAgentGoalVertexConflicts(probdata);
-#ifdef USE_WAITEDGE_CONFLICTS
-    const auto& agent_goal_edge_conflicts = SCIPprobdataGetAgentGoalEdgeConflicts(probdata);
-#endif
+//     const auto& agent_goal_vertex_conflicts = SCIPprobdataGetAgentGoalVertexConflicts(probdata);
+// #ifdef USE_WAITEDGE_CONFLICTS
+//     const auto& agent_goal_edge_conflicts = SCIPprobdataGetAgentGoalEdgeConflicts(probdata);
+// #endif
 
     // Get cuts.
     const auto& agent_robust_cuts = SCIPprobdataGetAgentRobustCuts(probdata);
@@ -609,6 +609,7 @@ SCIP_RETCODE run_trufflehog_pricer(
 
     // Price each agent.
     const auto ts = SCIPprobdataGetTimeSpacing(probdata);
+    // println("Time spacing: {}", ts);
     Float min_reduced_cost = 0;
 #ifdef PRINT_DEBUG
     Int nb_new_cols = 0;
@@ -660,60 +661,112 @@ SCIP_RETCODE run_trufflehog_pricer(
                 // Add the dual variable value to the edges leading into the vertex.
                 if (nta.a == a){
                     const auto t = nta.t - 1;
+                    if (t == -1)
                     {
-                        const auto n = map.get_south(nta.n);
-                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
-                        penalties.north -= dual;
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(nta.n, t+1);
+                          penalties.north -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(nta.n, t+1);
+                          penalties.south -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(nta.n, t+1);
+                          penalties.east -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(nta.n, t+1);
+                          penalties.west -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(nta.n, t+1);
+                          penalties.wait -= dual;
+                      }
                     }
+                    else 
                     {
-                        const auto n = map.get_north(nta.n);
-                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
-                        penalties.south -= dual;
-                    }
-                    {
-                        const auto n = map.get_west(nta.n);
-                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
-                        penalties.east -= dual;
-                    }
-                    {
-                        const auto n = map.get_east(nta.n);
-                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
-                        penalties.west -= dual;
-                    }
-                    {
-                        const auto n = map.get_wait(nta.n);
-                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
-                        penalties.wait -= dual;
+                      {
+                          const auto n = map.get_south(nta.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.north -= dual;
+                      }
+                      {
+                          const auto n = map.get_north(nta.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.south -= dual;
+                      }
+                      {
+                          const auto n = map.get_west(nta.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.east -= dual;
+                      }
+                      {
+                          const auto n = map.get_east(nta.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.west -= dual;
+                      }
+                      {
+                          const auto n = map.get_wait(nta.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.wait -= dual;
+                      }
                     }
                 }
                 else
                 {
                   for (Time t = nta.t - 1; t <= nta.t - 1 + ts; t++)
                   {
+                    if (t == -1)
                     {
-                        const auto n = map.get_south(nta.n);
-                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
-                        penalties.north -= dual / ((double) ts + 1);
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(nta.n, t+1);
+                          penalties.north -= dual / ((double) ts + 1);
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(nta.n, t+1);
+                          penalties.south -= dual / ((double) ts + 1);
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(nta.n, t+1);
+                          penalties.east -= dual / ((double) ts + 1);
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(nta.n, t+1);
+                          penalties.west -= dual / ((double) ts + 1);
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(nta.n, t+1);
+                          penalties.wait -= dual / ((double) ts + 1);
+                      }
                     }
+                    else 
                     {
-                        const auto n = map.get_north(nta.n);
-                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
-                        penalties.south -= dual / ((double) ts + 1);
-                    }
-                    {
-                        const auto n = map.get_west(nta.n);
-                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
-                        penalties.east -= dual / ((double) ts + 1);
-                    }
-                    {
-                        const auto n = map.get_east(nta.n);
-                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
-                        penalties.west -= dual / ((double) ts + 1);
-                    }
-                    {
-                        const auto n = map.get_wait(nta.n);
-                        auto& penalties = edge_penalties.get_edge_penalties(n, t);
-                        penalties.wait -= dual / ((double) ts + 1);
+                      {
+                          const auto n = map.get_south(nta.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.north -= dual / ((double) ts + 1);
+                      }
+                      {
+                          const auto n = map.get_north(nta.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.south -= dual / ((double) ts + 1);
+                      }
+                      {
+                          const auto n = map.get_west(nta.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.east -= dual / ((double) ts + 1);
+                      }
+                      {
+                          const auto n = map.get_east(nta.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.west -= dual / ((double) ts + 1);
+                      }
+                      {
+                          const auto n = map.get_wait(nta.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.wait -= dual / ((double) ts + 1);
+                      }
                     }
                   }
                 }
@@ -741,44 +794,44 @@ SCIP_RETCODE run_trufflehog_pricer(
                     auto& penalties = edge_penalties.get_edge_penalties(n, t);
                     penalties.d[d] -= dual;
 
-                    // If a wait edge in a two-agent robust cut corresponds to waiting at the goal, incur the
-                    // penalty for staying at the goal because the low-level solver doesn't traverse this edge.
-                    if (n == goal && d == Direction::WAIT)
-                    {
-                        const auto conflict_time = it->t;
-                        finish_time_penalties.add(conflict_time, -dual);
-                    }
+                    // // If a wait edge in a two-agent robust cut corresponds to waiting at the goal, incur the
+                    // // penalty for staying at the goal because the low-level solver doesn't traverse this edge.
+                    // if (n == goal && d == Direction::WAIT)
+                    // {
+                    //     const auto conflict_time = it->t;
+                    //     finish_time_penalties.add(conflict_time, -dual);
+                    // }
                 }
             }
         }
 
-        // If the node of a vertex conflict is the goal, incur a penalty for waiting (indefinitely) at the goal
-        // after the agent has completed its path.
-        for (const auto& [t, row] : agent_goal_vertex_conflicts[a])
-        {
-            const auto dual = is_farkas ? SCIProwGetDualfarkas(row) : SCIProwGetDualsol(row);
-            debug_assert(SCIPisFeasLE(scip, dual, 0.0));
-            if (SCIPisFeasLT(scip, dual, 0.0))
-            {
-                // Add the penalty if the agent finishes before time t. The penalty at time t is accounted for in the
-                // global edge penalties.
-                finish_time_penalties.add(t - 1, -dual);
-            }
-        }
+        // // If the node of a vertex conflict is the goal, incur a penalty for waiting (indefinitely) at the goal
+        // // after the agent has completed its path.
+        // for (const auto& [t, row] : agent_goal_vertex_conflicts[a])
+        // {
+        //     const auto dual = is_farkas ? SCIProwGetDualfarkas(row) : SCIProwGetDualsol(row);
+        //     debug_assert(SCIPisFeasLE(scip, dual, 0.0));
+        //     if (SCIPisFeasLT(scip, dual, 0.0))
+        //     {
+        //         // Add the penalty if the agent finishes before time t. The penalty at time t is accounted for in the
+        //         // global edge penalties.
+        //         finish_time_penalties.add(t - 1, -dual);
+        //     }
+        // }
 
         // If the wait edge in a wait edge conflict is at the goal, incur a penalty for staying at the goal.
 #ifdef USE_WAITEDGE_CONFLICTS
-        for (const auto& [t, row] : agent_goal_edge_conflicts[a])
-        {
-            const auto dual = is_farkas ? SCIProwGetDualfarkas(row) : SCIProwGetDualsol(row);
-            debug_assert(SCIPisFeasLE(scip, dual, 0.0));
-            if (SCIPisFeasLT(scip, dual, 0.0))
-            {
-                // If an agent finishes at time t, it does not traverse the edge at time t to t+1. So the agent is
-                // penalised here.
-                finish_time_penalties.add(t, -dual);
-            }
-        }
+        // for (const auto& [t, row] : agent_goal_edge_conflicts[a])
+        // {
+        //     const auto dual = is_farkas ? SCIProwGetDualfarkas(row) : SCIProwGetDualsol(row);
+        //     debug_assert(SCIPisFeasLE(scip, dual, 0.0));
+        //     if (SCIPisFeasLT(scip, dual, 0.0))
+        //     {
+        //         // If an agent finishes at time t, it does not traverse the edge at time t to t+1. So the agent is
+        //         // penalised here.
+        //         finish_time_penalties.add(t, -dual);
+        //     }
+        // }
 #endif
 
         // Add goal crossings or finish time penalties for goal conflicts. If agent a1 finishes at or before time t,
