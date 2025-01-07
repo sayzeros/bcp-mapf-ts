@@ -794,13 +794,13 @@ SCIP_RETCODE run_trufflehog_pricer(
                     auto& penalties = edge_penalties.get_edge_penalties(n, t);
                     penalties.d[d] -= dual;
 
-                    // // If a wait edge in a two-agent robust cut corresponds to waiting at the goal, incur the
-                    // // penalty for staying at the goal because the low-level solver doesn't traverse this edge.
-                    // if (n == goal && d == Direction::WAIT)
-                    // {
-                    //     const auto conflict_time = it->t;
-                    //     finish_time_penalties.add(conflict_time, -dual);
-                    // }
+                    // If a wait edge in a two-agent robust cut corresponds to waiting at the goal, incur the
+                    // penalty for staying at the goal because the low-level solver doesn't traverse this edge.
+                    if (n == goal && d == Direction::WAIT)
+                    {
+                        const auto conflict_time = it->t;
+                        finish_time_penalties.add(conflict_time, -dual);
+                    }
                 }
             }
         }
