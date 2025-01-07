@@ -127,7 +127,11 @@ SCIP_RETCODE SCIPcreateVar(
                             0.0,
                             1.0,
                             obj,
-                            SCIP_VARTYPE_BINARY,
+#ifdef SOLVE_LP
+                            SCIP_VARTYPE_CONTINUOUS,
+#else
+                            SCIP_VARTYPE_BINARY, 
+#endif
                             FALSE,
                             TRUE,
                             nullptr,

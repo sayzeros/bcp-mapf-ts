@@ -143,8 +143,8 @@ SCIP_RETCODE vertex_conflicts_create_cut(
         debug_assert(var_val == SCIPgetSolVal(scip, nullptr, var));
 
         // Add coefficients.
-        if ((nt.t < path_length && path[nt.t].n == nt.n) ||
-            (nt.t >= path_length && path[path_length - 1].n == nt.n))
+        if ((nt.t < path_length && path[nt.t].n == nt.n))// ||
+            // (nt.t >= path_length && path[path_length - 1].n == nt.n))
         {
             // Print.
             debugln("      Agent: {:2d}, Val: {:7.4f}, Path: {}",
@@ -178,16 +178,16 @@ SCIP_RETCODE vertex_conflicts_create_cut(
         *result = SCIP_SEPARATED;
     }
 
-    // Store the constraint by agent if the vertex conflict is at the goal of an agent.
-    {
-        auto& agent_goal_vertex_conflicts = SCIPprobdataGetAgentGoalVertexConflicts(probdata);
-        for (Agent a = 0; a < N; ++a)
-            if (nt.n == agents[a].goal)
-            {
-                agent_goal_vertex_conflicts[a].push_back({nt.t, row});
-                break;
-            }
-    }
+    // // Store the constraint by agent if the vertex conflict is at the goal of an agent.
+    // {
+    //     auto& agent_goal_vertex_conflicts = SCIPprobdataGetAgentGoalVertexConflicts(probdata);
+    //     for (Agent a = 0; a < N; ++a)
+    //         if (nt.n == agents[a].goal)
+    //         {
+    //             agent_goal_vertex_conflicts[a].push_back({nt.t, row});
+    //             break;
+    //         }
+    // }
 
     // Store the constraint.
     debug_assert(consdata->conflicts.find(nt) == consdata->conflicts.end());
@@ -215,24 +215,24 @@ SCIP_RETCODE vertex_conflicts_check(
     // Get variables.
     const auto& vars = SCIPprobdataGetVars(probdata);
 
-    // Find the makespan.
-    Time makespan = 0;
-    for (const auto& [var, _] : vars)
-    {
-        // Get the path length.
-        debug_assert(var);
-        auto vardata = SCIPvarGetData(var);
-        const auto path_length = SCIPvardataGetPathLength(vardata);
+    // // Find the makespan.
+    // Time makespan = 0;
+    // for (const auto& [var, _] : vars)
+    // {
+    //     // Get the path length.
+    //     debug_assert(var);
+    //     auto vardata = SCIPvarGetData(var);
+    //     const auto path_length = SCIPvardataGetPathLength(vardata);
 
-        // Get the variable value.
-        const auto var_val = SCIPgetSolVal(scip, sol, var);
+    //     // Get the variable value.
+    //     const auto var_val = SCIPgetSolVal(scip, sol, var);
 
-        // Store the length of the longest path.
-        if (path_length > makespan && SCIPisPositive(scip, var_val))
-        {
-            makespan = path_length;
-        }
-    }
+    //     // Store the length of the longest path.
+    //     if (path_length > makespan && SCIPisPositive(scip, var_val))
+    //     {
+    //         makespan = path_length;
+    //     }
+    // }
 
     // Calculate the number of times a vertex is used by summing the columns.
     HashTable<NodeTime, SCIP_Real> vertex_times_used;
@@ -256,12 +256,12 @@ SCIP_RETCODE vertex_conflicts_check(
                 const NodeTime nt{path[t].n, t};
                 vertex_times_used[nt] += var_val;
             }
-            const auto n = path[path_length - 1].n;
-            for (; t < makespan; ++t)
-            {
-                const NodeTime nt{n, t};
-                vertex_times_used[nt] += var_val;
-            }
+            // const auto n = path[path_length - 1].n;
+            // for (; t < makespan; ++t)
+            // {
+            //     const NodeTime nt{n, t};
+            //     vertex_times_used[nt] += var_val;
+            // }
         }
     }
 
@@ -319,22 +319,22 @@ SCIP_RETCODE vertex_conflicts_separate(
     // Get variables.
     const auto& vars = SCIPprobdataGetVars(probdata);
 
-    // Find the makespan.
-    Time makespan = 0;
-    for (const auto& [var, var_val] : vars)
-    {
-        // Get the path length.
-        debug_assert(var);
-        auto vardata = SCIPvarGetData(var);
-        const auto path_length = SCIPvardataGetPathLength(vardata);
+    // // Find the makespan.
+    // Time makespan = 0;
+    // for (const auto& [var, var_val] : vars)
+    // {
+    //     // Get the path length.
+    //     debug_assert(var);
+    //     auto vardata = SCIPvarGetData(var);
+    //     const auto path_length = SCIPvardataGetPathLength(vardata);
 
-        // Store the length of the longest path.
-        debug_assert(var_val == SCIPgetSolVal(scip, sol, var));
-        if (path_length > makespan && SCIPisPositive(scip, var_val))
-        {
-            makespan = path_length;
-        }
-    }
+    //     // Store the length of the longest path.
+    //     debug_assert(var_val == SCIPgetSolVal(scip, sol, var));
+    //     if (path_length > makespan && SCIPisPositive(scip, var_val))
+    //     {
+    //         makespan = path_length;
+    //     }
+    // }
 
     // Calculate the number of times a vertex is used by summing the columns.
     HashTable<NodeTime, SCIP_Real> vertex_used;
@@ -356,12 +356,12 @@ SCIP_RETCODE vertex_conflicts_separate(
                 const NodeTime nt{path[t].n, t};
                 vertex_used[nt] += var_val;
             }
-            const auto n = path[path_length - 1].n;
-            for (; t < makespan; ++t)
-            {
-                const NodeTime nt{n, t};
-                vertex_used[nt] += var_val;
-            }
+            // const auto n = path[path_length - 1].n;
+            // for (; t < makespan; ++t)
+            // {
+            //     const NodeTime nt{n, t};
+            //     vertex_used[nt] += var_val;
+            // }
         }
     }
 
@@ -824,8 +824,8 @@ SCIP_RETCODE vertex_conflicts_add_var(
     for (const auto& [nt, vertex_conflict] : consdata->conflicts)
     {
         const auto& [row] = vertex_conflict;
-        if ((nt.t < path_length && path[nt.t].n == nt.n) ||
-            (nt.t >= path_length && path[path_length - 1].n == nt.n))
+        if ((nt.t < path_length && path[nt.t].n == nt.n)) //||
+            // (nt.t >= path_length && path[path_length - 1].n == nt.n))
         {
             SCIP_CALL(SCIPaddVarToRow(scip, row, var, 1.0));
         }

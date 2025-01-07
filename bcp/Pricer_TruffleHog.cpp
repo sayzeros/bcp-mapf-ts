@@ -648,7 +648,7 @@ SCIP_RETCODE run_trufflehog_pricer(
             cost_offset = -dual;
         }
 
-        // Input dual values for old time spacing. TODO:
+        // Input dual values for old time spacing. 
 #ifdef USE_OLD_TIME_SPACING
         for (const auto& [nta, old_time_spacing_conflict] : old_time_spacing_conss)
         {

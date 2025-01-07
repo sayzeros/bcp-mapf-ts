@@ -272,6 +272,9 @@ endif ()
 target_link_libraries(bcp-mapf fmt::fmt-header-only cliquer ${SCIP_LIBRARY} ${LIBM})
 target_link_libraries(trufflehog fmt::fmt-header-only)
 
+# Set to solve LP
+target_compile_options(bcp-mapf PRIVATE -DSOLVE_LP)
+
 # Set pricer options.
 # target_compile_options(bcp-mapf PRIVATE -DUSE_SIPP)
 target_compile_options(bcp-mapf PRIVATE -DUSE_RESERVATION_TABLE)
@@ -301,8 +304,8 @@ target_compile_options(bcp-mapf PRIVATE -DUSE_AGENTWAITEDGE_CONFLICTS)
 #target_compile_options(bcp-mapf PRIVATE -DUSE_SIXEDGE_CONFLICTS)
 #target_compile_options(bcp-mapf PRIVATE -DUSE_VERTEX_FOUREDGE_CONFLICTS)
 #target_compile_options(bcp-mapf PRIVATE -DUSE_CLIQUE_CONFLICTS)
-target_compile_options(bcp-mapf PRIVATE -DUSE_GOAL_CONFLICTS)
-target_compile_options(trufflehog PRIVATE -DUSE_GOAL_CONFLICTS)
+# target_compile_options(bcp-mapf PRIVATE -DUSE_GOAL_CONFLICTS)
+# target_compile_options(trufflehog PRIVATE -DUSE_GOAL_CONFLICTS)
 
 # Set primal heuristics options.
 if (LNS2)

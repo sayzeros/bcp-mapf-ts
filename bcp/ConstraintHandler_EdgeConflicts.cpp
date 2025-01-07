@@ -194,21 +194,21 @@ SCIP_RETCODE edge_conflicts_create_cut(
         *result = SCIP_SEPARATED;
     }
 
-    // Store the constraint by agent if the edge conflict is at the goal of an agent.
-#ifdef USE_WAITEDGE_CONFLICTS
-    {
-        const auto e = edges[2];
-        debug_assert(e.d == Direction::WAIT);
+//     // Store the constraint by agent if the edge conflict is at the goal of an agent.
+// #ifdef USE_WAITEDGE_CONFLICTS
+//     {
+//         const auto e = edges[2];
+//         debug_assert(e.d == Direction::WAIT);
 
-        auto& agent_goal_edge_conflicts = SCIPprobdataGetAgentGoalEdgeConflicts(probdata);
-        for (Agent a = 0; a < N; ++a)
-            if (e.n == agents[a].goal)
-            {
-                agent_goal_edge_conflicts[a].push_back({t, row});
-                break;
-            }
-    }
-#endif
+//         auto& agent_goal_edge_conflicts = SCIPprobdataGetAgentGoalEdgeConflicts(probdata);
+//         for (Agent a = 0; a < N; ++a)
+//             if (e.n == agents[a].goal)
+//             {
+//                 agent_goal_edge_conflicts[a].push_back({t, row});
+//                 break;
+//             }
+//     }
+// #endif
 
     // Store the constraint.
     {
@@ -366,11 +366,11 @@ SCIP_RETCODE edge_conflicts_separate(
             }
 #ifdef USE_WAITEDGE_CONFLICTS
             const Edge e{path[path_length - 1].n, Direction::WAIT};
-            for (; t < makespan - 1; ++t)
-            {
-                const EdgeTime et{e, t};
-                edge_used[et] += var_val;
-            }
+            // for (; t < makespan - 1; ++t)
+            // {
+            //     const EdgeTime et{e, t};
+            //     edge_used[et] += var_val;
+            // }
 #endif
         }
     }
@@ -902,8 +902,8 @@ SCIP_RETCODE edge_conflicts_add_var(
     {
         const auto& [row, edges, t] = edge_conflict;
 #ifdef USE_WAITEDGE_CONFLICTS
-        if ((t < path_length - 1 && (path[t] == edges[0] || path[t] == edges[1] || path[t] == edges[2])) ||
-            (t >= path_length - 1 && path[path_length - 1].n == edges[2].n))
+        if ((t < path_length - 1 && (path[t] == edges[0] || path[t] == edges[1] || path[t] == edges[2])))// ||
+            // (t >= path_length - 1 && path[path_length - 1].n == edges[2].n))
 #else
         if (t < path_length - 1 && (path[t] == edges[0] || path[t] == edges[1]))
 #endif
