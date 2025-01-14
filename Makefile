@@ -1316,29 +1316,29 @@ bcp/Heuristic_LNS2Repair.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/bcp-mapf.dir/build.make CMakeFiles/bcp-mapf.dir/bcp/Heuristic_LNS2Repair.cpp.s
 .PHONY : bcp/Heuristic_LNS2Repair.cpp.s
 
-bcp/Heuristic_PrioritizedPlanning.o: bcp/Heuristic_PrioritizedPlanning.cpp.o
-.PHONY : bcp/Heuristic_PrioritizedPlanning.o
+bcp/Heuristic_PrioritizedPlanning_ts.o: bcp/Heuristic_PrioritizedPlanning_ts.cpp.o
+.PHONY : bcp/Heuristic_PrioritizedPlanning_ts.o
 
 # target to build an object file
-bcp/Heuristic_PrioritizedPlanning.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/bcp-mapf.dir/build.make CMakeFiles/bcp-mapf.dir/bcp/Heuristic_PrioritizedPlanning.cpp.o
-.PHONY : bcp/Heuristic_PrioritizedPlanning.cpp.o
+bcp/Heuristic_PrioritizedPlanning_ts.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bcp-mapf.dir/build.make CMakeFiles/bcp-mapf.dir/bcp/Heuristic_PrioritizedPlanning_ts.cpp.o
+.PHONY : bcp/Heuristic_PrioritizedPlanning_ts.cpp.o
 
-bcp/Heuristic_PrioritizedPlanning.i: bcp/Heuristic_PrioritizedPlanning.cpp.i
-.PHONY : bcp/Heuristic_PrioritizedPlanning.i
+bcp/Heuristic_PrioritizedPlanning_ts.i: bcp/Heuristic_PrioritizedPlanning_ts.cpp.i
+.PHONY : bcp/Heuristic_PrioritizedPlanning_ts.i
 
 # target to preprocess a source file
-bcp/Heuristic_PrioritizedPlanning.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/bcp-mapf.dir/build.make CMakeFiles/bcp-mapf.dir/bcp/Heuristic_PrioritizedPlanning.cpp.i
-.PHONY : bcp/Heuristic_PrioritizedPlanning.cpp.i
+bcp/Heuristic_PrioritizedPlanning_ts.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bcp-mapf.dir/build.make CMakeFiles/bcp-mapf.dir/bcp/Heuristic_PrioritizedPlanning_ts.cpp.i
+.PHONY : bcp/Heuristic_PrioritizedPlanning_ts.cpp.i
 
-bcp/Heuristic_PrioritizedPlanning.s: bcp/Heuristic_PrioritizedPlanning.cpp.s
-.PHONY : bcp/Heuristic_PrioritizedPlanning.s
+bcp/Heuristic_PrioritizedPlanning_ts.s: bcp/Heuristic_PrioritizedPlanning_ts.cpp.s
+.PHONY : bcp/Heuristic_PrioritizedPlanning_ts.s
 
 # target to generate assembly for a file
-bcp/Heuristic_PrioritizedPlanning.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/bcp-mapf.dir/build.make CMakeFiles/bcp-mapf.dir/bcp/Heuristic_PrioritizedPlanning.cpp.s
-.PHONY : bcp/Heuristic_PrioritizedPlanning.cpp.s
+bcp/Heuristic_PrioritizedPlanning_ts.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bcp-mapf.dir/build.make CMakeFiles/bcp-mapf.dir/bcp/Heuristic_PrioritizedPlanning_ts.cpp.s
+.PHONY : bcp/Heuristic_PrioritizedPlanning_ts.cpp.s
 
 bcp/Main.o: bcp/Main.cpp.o
 .PHONY : bcp/Main.o
@@ -2309,9 +2309,9 @@ help:
 	@echo "... bcp/Heuristic_LNS2Repair.o"
 	@echo "... bcp/Heuristic_LNS2Repair.i"
 	@echo "... bcp/Heuristic_LNS2Repair.s"
-	@echo "... bcp/Heuristic_PrioritizedPlanning.o"
-	@echo "... bcp/Heuristic_PrioritizedPlanning.i"
-	@echo "... bcp/Heuristic_PrioritizedPlanning.s"
+	@echo "... bcp/Heuristic_PrioritizedPlanning_ts.o"
+	@echo "... bcp/Heuristic_PrioritizedPlanning_ts.i"
+	@echo "... bcp/Heuristic_PrioritizedPlanning_ts.s"
 	@echo "... bcp/Main.o"
 	@echo "... bcp/Main.i"
 	@echo "... bcp/Main.s"

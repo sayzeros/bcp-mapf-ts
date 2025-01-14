@@ -117,7 +117,7 @@ set(BCP_MAPF_SOURCE_FILES
     bcp/Heuristic_LNS2Repair.h
     bcp/Heuristic_LNS2Repair.cpp
     bcp/Heuristic_PrioritizedPlanning.h
-    bcp/Heuristic_PrioritizedPlanning.cpp
+    bcp/Heuristic_PrioritizedPlanning_ts.cpp  # changed
     bcp/Output.h
     bcp/Output.cpp
     scipoptsuite-7.0.3/scip/src/scip/clock.c
@@ -273,7 +273,7 @@ target_link_libraries(bcp-mapf fmt::fmt-header-only cliquer ${SCIP_LIBRARY} ${LI
 target_link_libraries(trufflehog fmt::fmt-header-only)
 
 # Set to solve LP
-target_compile_options(bcp-mapf PRIVATE -DSOLVE_LP)
+# target_compile_options(bcp-mapf PRIVATE -DSOLVE_LP)
 
 # Set pricer options.
 # target_compile_options(bcp-mapf PRIVATE -DUSE_SIPP)
@@ -282,8 +282,8 @@ target_compile_options(bcp-mapf PRIVATE -DUSE_ASTAR_SOLUTION_CACHING)
 
 # Set constraint handler options.
 target_compile_options(bcp-mapf PRIVATE -DUSE_OLD_TIME_SPACING)
-# target_compile_options(bcp-mapf PRIVATE -DUSE_NEW_TIME_SPACING)  # FIXME: Not implemented yet.
-# target_compile_options(bcp-mapf PRIVATE -DUSE_TIME_RANGE)  # FIXME: Not implemented yet.
+# target_compile_options(bcp-mapf PRIVATE -DUSE_NEW_TIME_SPACING)  # FIXME: 
+# target_compile_options(bcp-mapf PRIVATE -DUSE_TIME_RANGE)  # FIXME: 
 
 # Set separator options.
 target_compile_options(bcp-mapf PRIVATE -DUSE_WAITEDGE_CONFLICTS)
@@ -315,7 +315,7 @@ endif ()
 if (EECBS)
     target_compile_options(bcp-mapf PRIVATE -DUSE_EECBS_PRIMAL_HEURISTIC -DEECBS_TIME_LIMIT=15.0 -DEECBS_SUBOPTIMALITY=1.1)
 endif ()
-# target_compile_options(bcp-mapf PRIVATE -DUSE_PRIORITIZED_PLANNING_PRIMAL_HEURISTIC)
+target_compile_options(bcp-mapf PRIVATE -DUSE_PRIORITIZED_PLANNING_PRIMAL_HEURISTIC)
 
 # Set node selection options.
 target_compile_options(bcp-mapf PRIVATE -DUSE_BEST_FIRST_NODE_SELECTION)
