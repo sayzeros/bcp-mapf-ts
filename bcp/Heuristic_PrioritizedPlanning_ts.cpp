@@ -27,7 +27,12 @@ Author: Edward Lam <ed@ed-lam.com>
 #include "scip/cons_setppc.h"
 #include "ConstraintHandler_VertexConflicts.h"
 #include "ConstraintHandler_EdgeConflicts.h"
+#ifdef USE_OLD_TIME_SPACING
 #include "ConstraintHandler_OldTimeSpacing.h"
+#endif
+#ifdef USE_NEW_TIME_SPACING
+#include "ConstraintHandler_NewTimeSpacing.h"
+#endif
 #include "Constraint_VertexBranching.h"
 //#include "Constraint_WaitBranching.h"
 #include "Constraint_LengthBranching.h"
@@ -250,6 +255,9 @@ SCIP_DECL_HEUREXEC(heurExecPrioritizedPlanning)
 #ifdef USE_OLD_TIME_SPACING
     const auto& old_time_spacing_conss = old_time_spacing_get_constraints(probdata);
 #endif
+#ifdef USE_NEW_TIME_SPACING
+    const auto& new_time_spacing_conss = new_time_spacing_get_constraints(probdata);
+#endif
     const auto& agent_robust_cuts = SCIPprobdataGetAgentRobustCuts(probdata);
 
 
@@ -387,6 +395,7 @@ SCIP_DECL_HEUREXEC(heurExecPrioritizedPlanning)
         // setup edge_penalties TODO:
         edge_penalties = global_edge_penalties;
 
+        // Block other agents origin until time ts
         for (Agent aa = 0; aa < N; aa++)
         {
           if (aa == a) continue;
@@ -545,6 +554,130 @@ SCIP_DECL_HEUREXEC(heurExecPrioritizedPlanning)
             }
         }
 #endif
+#ifdef USE_NEW_TIME_SPACING
+        for (const auto& [ntah, new_time_spacing_conflict] : new_time_spacing_conss)
+        {
+            const auto& [row] = new_time_spacing_conflict;
+            const auto dual = is_farkas ? SCIProwGetDualfarkas(row) : SCIProwGetDualsol(row);
+            debug_assert(SCIPisFeasLE(scip, dual, 0.0));
+            if (SCIPisFeasLT(scip, dual, 0.0))
+            {
+                // Add the dual variable value to the edges leading into the vertex.
+                if (ntah.a == a){
+                    const auto t = ntah.t - 1;
+                    if (t == -1)
+                    {
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.north -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.south -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.east -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.west -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.wait -= dual;
+                      }
+                    }
+                    else 
+                    {
+                      {
+                          const auto n = map.get_south(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.north -= dual;
+                      }
+                      {
+                          const auto n = map.get_north(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.south -= dual;
+                      }
+                      {
+                          const auto n = map.get_west(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.east -= dual;
+                      }
+                      {
+                          const auto n = map.get_east(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.west -= dual;
+                      }
+                      {
+                          const auto n = map.get_wait(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.wait -= dual;
+                      }
+                    }
+                }
+                else
+                {
+                  const auto t = ntah.t - 1 + ntah.h;
+                  {
+                    if (t == -1)
+                    {
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.north -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.south -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.east -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.west -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.wait -= dual;
+                      }
+                    }
+                    else 
+                    {
+                      {
+                          const auto n = map.get_south(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.north -= dual;
+                      }
+                      {
+                          const auto n = map.get_north(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.south -= dual;
+                      }
+                      {
+                          const auto n = map.get_west(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.east -= dual;
+                      }
+                      {
+                          const auto n = map.get_east(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.west -= dual;
+                      }
+                      {
+                          const auto n = map.get_wait(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.wait -= dual;
+                      }
+                    }
+                  }
+                }
+            }
+        }
+#endif 
+
 
         // Modify edge costs for two-agent robust cuts.
         finish_time_penalties.clear();

@@ -275,7 +275,7 @@ target_link_libraries(bcp-mapf fmt::fmt-header-only cliquer ${SCIP_LIBRARY} ${LI
 target_link_libraries(trufflehog fmt::fmt-header-only)
 
 # Set to solve LP
-target_compile_options(bcp-mapf PRIVATE -DSOLVE_LP)
+# target_compile_options(bcp-mapf PRIVATE -DSOLVE_LP)
 
 # Set pricer options.
 # target_compile_options(bcp-mapf PRIVATE -DUSE_SIPP)
