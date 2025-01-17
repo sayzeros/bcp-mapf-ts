@@ -62,7 +62,9 @@ set(BCP_MAPF_SOURCE_FILES
     bcp/ConstraintHandler_EdgeConflicts.h
     bcp/ConstraintHandler_EdgeConflicts.cpp
     bcp/ConstraintHandler_OldTimeSpacing.h
-    bcp/ConstraintHandler_OldTimeSpacing.cpp  # FIXME: Add other time spacing constraint handlers
+    bcp/ConstraintHandler_OldTimeSpacing.cpp
+    bcp/ConstraintHandler_NewTimeSpacing.h
+    bcp/ConstraintHandler_NewTimeSpacing.cpp
     bcp/Separator.h
     bcp/Separator_Preprocessing.h
     bcp/Separator_Preprocessing.cpp
@@ -273,7 +275,7 @@ target_link_libraries(bcp-mapf fmt::fmt-header-only cliquer ${SCIP_LIBRARY} ${LI
 target_link_libraries(trufflehog fmt::fmt-header-only)
 
 # Set to solve LP
-# target_compile_options(bcp-mapf PRIVATE -DSOLVE_LP)
+target_compile_options(bcp-mapf PRIVATE -DSOLVE_LP)
 
 # Set pricer options.
 # target_compile_options(bcp-mapf PRIVATE -DUSE_SIPP)
@@ -281,9 +283,8 @@ target_compile_options(bcp-mapf PRIVATE -DUSE_RESERVATION_TABLE)
 target_compile_options(bcp-mapf PRIVATE -DUSE_ASTAR_SOLUTION_CACHING)
 
 # Set constraint handler options.
-target_compile_options(bcp-mapf PRIVATE -DUSE_OLD_TIME_SPACING)
-# target_compile_options(bcp-mapf PRIVATE -DUSE_NEW_TIME_SPACING)  # FIXME: 
-# target_compile_options(bcp-mapf PRIVATE -DUSE_TIME_RANGE)  # FIXME: 
+# target_compile_options(bcp-mapf PRIVATE -DUSE_OLD_TIME_SPACING)
+target_compile_options(bcp-mapf PRIVATE -DUSE_NEW_TIME_SPACING)  # FIXME: 
 
 # Set separator options.
 target_compile_options(bcp-mapf PRIVATE -DUSE_WAITEDGE_CONFLICTS)

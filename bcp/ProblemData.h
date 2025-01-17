@@ -125,10 +125,19 @@ SCIP_CONS* SCIPprobdataGetEdgeConflictsCons(
     SCIP_ProbData* probdata    // Problem data
 );
 
+#ifdef USE_OLD_TIME_SPACING
 // Get constraint for old time spacing
 SCIP_CONS* SCIPprobdataGetOldTimeSpacingCons(
     SCIP_ProbData* probdata    // Problem data
 );
+#endif
+
+#ifdef USE_NEW_TIME_SPACING
+// Get constraint for new time spacing
+SCIP_CONS* SCIPprobdataGetNewTimeSpacingCons(
+    SCIP_ProbData* probdata    // Problem data
+);
+#endif
 
 // Get array of two-agent robust cuts
 Vector<TwoAgentRobustCut>& SCIPprobdataGetTwoAgentRobustCuts(

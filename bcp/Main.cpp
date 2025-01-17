@@ -117,9 +117,6 @@ SCIP_RETCODE start_solver(
 #ifdef USE_NEW_TIME_SPACING
     println("Using new time-spacing constraints");
 #endif
-#ifdef USE_TIME_RANGE
-    println("Using time-range constraints");
-#endif
 
 #ifdef DEBUG
     println("Compiled in debug mode");

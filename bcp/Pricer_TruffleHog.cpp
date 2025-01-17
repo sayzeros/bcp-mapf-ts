@@ -29,6 +29,9 @@ Author: Edward Lam <ed@ed-lam.com>
 #ifdef USE_OLD_TIME_SPACING
 #include "ConstraintHandler_OldTimeSpacing.h"
 #endif
+#ifdef USE_NEW_TIME_SPACING
+#include "ConstraintHandler_NewTimeSpacing.h"
+#endif
 #include "Constraint_VertexBranching.h"
 //#include "Constraint_WaitBranching.h"
 #include "Constraint_LengthBranching.h"
@@ -45,7 +48,11 @@ Author: Edward Lam <ed@ed-lam.com>
 #define PRICER_DELAY    TRUE    // Only call pricer if all problem variables have non-negative reduced costs
 
 #define EPS (1e-6)
+#ifdef SOLVE_LP
+#define STALLED_NB_ROUNDS (1000)
+#else
 #define STALLED_NB_ROUNDS (4)
+#endif
 #define STALLED_ABSOLUTE_CHANGE (-1)
 
 struct PricingOrder
@@ -353,6 +360,9 @@ SCIP_RETCODE run_trufflehog_pricer(
     const auto& edge_conflicts_conss = edge_conflicts_get_constraints(probdata);
 #ifdef USE_OLD_TIME_SPACING
     const auto& old_time_spacing_conss = old_time_spacing_get_constraints(probdata);
+#endif
+#ifdef USE_NEW_TIME_SPACING
+    const auto& new_time_spacing_conss = new_time_spacing_get_constraints(probdata);
 #endif
 //     const auto& agent_goal_vertex_conflicts = SCIPprobdataGetAgentGoalVertexConflicts(probdata);
 // #ifdef USE_WAITEDGE_CONFLICTS
@@ -766,6 +776,131 @@ SCIP_RETCODE run_trufflehog_pricer(
                           const auto n = map.get_wait(nta.n);
                           auto& penalties = edge_penalties.get_edge_penalties(n, t);
                           penalties.wait -= dual / ((double) ts + 1);
+                      }
+                    }
+                  }
+                }
+            }
+        }
+#endif
+
+        // Input dual values for new time spacing. 
+#ifdef USE_NEW_TIME_SPACING
+        for (const auto& [ntah, new_time_spacing_conflict] : new_time_spacing_conss)
+        {
+            const auto& [row] = new_time_spacing_conflict;
+            const auto dual = is_farkas ? SCIProwGetDualfarkas(row) : SCIProwGetDualsol(row);
+            debug_assert(SCIPisFeasLE(scip, dual, 0.0));
+            if (SCIPisFeasLT(scip, dual, 0.0))
+            {
+                // Add the dual variable value to the edges leading into the vertex.
+                if (ntah.a == a){
+                    const auto t = ntah.t - 1;
+                    if (t == -1)
+                    {
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.north -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.south -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.east -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.west -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.wait -= dual;
+                      }
+                    }
+                    else 
+                    {
+                      {
+                          const auto n = map.get_south(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.north -= dual;
+                      }
+                      {
+                          const auto n = map.get_north(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.south -= dual;
+                      }
+                      {
+                          const auto n = map.get_west(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.east -= dual;
+                      }
+                      {
+                          const auto n = map.get_east(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.west -= dual;
+                      }
+                      {
+                          const auto n = map.get_wait(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.wait -= dual;
+                      }
+                    }
+                }
+                else
+                {
+                  const auto t = ntah.t - 1 + ntah.h;
+                  {
+                    if (t == -1)
+                    {
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.north -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.south -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.east -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.west -= dual;
+                      }
+                      {
+                          auto& penalties = edge_penalties.get_edge_penalties(ntah.n, t+1);
+                          penalties.wait -= dual;
+                      }
+                    }
+                    else 
+                    {
+                      {
+                          const auto n = map.get_south(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.north -= dual;
+                      }
+                      {
+                          const auto n = map.get_north(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.south -= dual;
+                      }
+                      {
+                          const auto n = map.get_west(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.east -= dual;
+                      }
+                      {
+                          const auto n = map.get_east(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.west -= dual;
+                      }
+                      {
+                          const auto n = map.get_wait(ntah.n);
+                          auto& penalties = edge_penalties.get_edge_penalties(n, t);
+                          penalties.wait -= dual;
                       }
                     }
                   }

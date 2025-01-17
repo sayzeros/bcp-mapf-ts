@@ -1,24 +1,24 @@
-#ifndef MAPF_CONSTRAINTHANDLER_OLDTIMESPACING_H
-#define MAPF_CONSTRAINTHANDLER_OLDTIMESPACING_H
+#ifndef MAPF_CONSTRAINTHANDLER_NEWTIMESPACING_H
+#define MAPF_CONSTRAINTHANDLER_NEWTIMESPACING_H
 
-#ifdef USE_OLD_TIME_SPACING
+#ifdef USE_NEW_TIME_SPACING
 
 #include "Includes.h"
 #include "Coordinates.h"
 #include "ProblemData.h"
 
-struct OldTimeSpacing
+struct NewTimeSpacing
 {
     SCIP_ROW* row;          // LP row
 };
 
 // Create the constraint handler for vertex conflicts and include it
-SCIP_RETCODE SCIPincludeConshdlrOldTimeSpacing(
+SCIP_RETCODE SCIPincludeConshdlrNewTimeSpacing(
     SCIP* scip    // SCIP
 );
 
 // Create a constraint for vertex conflicts and include it
-SCIP_RETCODE SCIPcreateConsOldTimeSpacing(
+SCIP_RETCODE SCIPcreateConsNewTimeSpacing(
     SCIP* scip,                 // SCIP
     SCIP_CONS** cons,           // Pointer to hold the created constraint
     const char* name,           // Name of constraint
@@ -35,7 +35,7 @@ SCIP_RETCODE SCIPcreateConsOldTimeSpacing(
                                 // if it may be moved to a more global node?
 );
 
-SCIP_RETCODE old_time_spacing_add_var(
+SCIP_RETCODE new_time_spacing_add_var(
     SCIP* scip,                // SCIP
     SCIP_CONS* cons,           // Vertex conflicts constraint
     SCIP_VAR* var,             // Variable
@@ -46,29 +46,29 @@ SCIP_RETCODE old_time_spacing_add_var(
 namespace TruffleHog
 {
 
-union NodeTimeAgent
+union NodeTimeAgentSpace
 {
     struct
     {
         Node n : 32;
-        Time t : 24;
+        Time t : 16;
         Agent a : 8;
+        int h : 8;
     };
-    uint64_t nta;
+    uint64_t ntah;
 
-    NodeTimeAgent() noexcept = default;
-    NodeTimeAgent(const uint64_t nta) noexcept : nta(nta) {}
-    explicit NodeTimeAgent(const Node n, const Time t, const Agent a) noexcept : n(n), t(t), a(a) {}
+    NodeTimeAgentSpace() noexcept = default;
+    NodeTimeAgentSpace(const uint64_t ntah) noexcept : ntah(ntah) {}
+    explicit NodeTimeAgentSpace(const Node n, const Time t, const Agent a, const int h) noexcept : n(n), t(t), a(a), h(h) {}
 };
-// static_assert(sizeof(NodeTimeAgent) == 12);
-static_assert(std::is_trivial<NodeTimeAgent>::value);
-inline bool operator==(const NodeTimeAgent a, const NodeTimeAgent b)
+static_assert(std::is_trivial<NodeTimeAgentSpace>::value);
+inline bool operator==(const NodeTimeAgentSpace a, const NodeTimeAgentSpace b)
 {
-    return a.nta == b.nta;
+    return a.ntah == b.ntah;
 }
-inline bool operator!=(const NodeTimeAgent a, const NodeTimeAgent b)
+inline bool operator!=(const NodeTimeAgentSpace a, const NodeTimeAgentSpace b)
 {
-    return a.nta != b.nta;
+    return a.ntah != b.ntah;
 }
 }
 
@@ -76,29 +76,17 @@ inline bool operator!=(const NodeTimeAgent a, const NodeTimeAgent b)
 namespace robin_hood
 {
 template<>
-struct hash<TruffleHog::NodeTimeAgent>
+struct hash<TruffleHog::NodeTimeAgentSpace>
 {
-    inline std::size_t operator()(const TruffleHog::NodeTimeAgent nta) const noexcept
+    inline std::size_t operator()(const TruffleHog::NodeTimeAgentSpace ntah) const noexcept
     {
-        return robin_hood::hash<uint64_t>{}(nta.nta);
+        return robin_hood::hash<uint64_t>{}(ntah.ntah);
     }
 };
 }
 
-template<>
-struct fmt::formatter<TruffleHog::NodeTimeAgent>
-{
-    template<typename ParseContext>
-    constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
-    template<typename FormatContext>
-    inline auto format(const TruffleHog::NodeTimeAgent nta, FormatContext& ctx)
-    {
-        return format_to(ctx.out(), "(n={},t={},a={})", nta.n, nta.t, nta.a);
-    }
-};
-
-const HashTable<NodeTimeAgent, OldTimeSpacing>& old_time_spacing_get_constraints(
+const HashTable<NodeTimeAgentSpace, NewTimeSpacing>& new_time_spacing_get_constraints(
     SCIP_ProbData* probdata    // Problem data
 );
 

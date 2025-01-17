@@ -1,13 +1,13 @@
 //#define PRINT_DEBUG
 
-#ifdef USE_OLD_TIME_SPACING
+#ifdef USE_NEW_TIME_SPACING
 
-#include "ConstraintHandler_OldTimeSpacing.h"
+#include "ConstraintHandler_NewTimeSpacing.h"
 #include "ProblemData.h"
 #include "VariableData.h"
 
-#define CONSHDLR_NAME          "old_time_spacing"
-#define CONSHDLR_DESC          "Constraint handler for old time spacing"
+#define CONSHDLR_NAME          "new_time_spacing"
+#define CONSHDLR_DESC          "Constraint handler for new time spacing"
 #define CONSHDLR_SEPAPRIORITY  9         // priority of the constraint handler for separation
 #define CONSHDLR_ENFOPRIORITY  -1100000    // priority of the constraint handler for constraint enforcing
 #define CONSHDLR_CHECKPRIORITY -1100000    // priority of the constraint handler for checking feasibility
@@ -17,16 +17,16 @@
 #define CONSHDLR_DELAYSEPA     TRUE       // should separation method be delayed, if other separators found cuts?
 #define CONSHDLR_NEEDSCONS     TRUE       // should the constraint handler be skipped, if no constraints are available?
 
-// Data for old time spacing
-struct OldTimeSpacingConsData
+// Data for new time spacing
+struct NewTimeSpacingConsData
 {
-    HashTable<NodeTimeAgent, OldTimeSpacing> conflicts;
+    HashTable<NodeTimeAgentSpace, NewTimeSpacing> conflicts;
 };
 
-// Create a constraint for old time spacing and include it
-SCIP_RETCODE SCIPcreateConsOldTimeSpacing(
+// Create a constraint for new time spacing and include it
+SCIP_RETCODE SCIPcreateConsNewTimeSpacing(
     SCIP* scip,                 // SCIP
-    SCIP_CONS** cons,           // Pointer to hold the created constraint
+    SCIP_CONS** cons,           // Pointer to hnew the created constraint
     const char* name,           // Name of constraint
     SCIP_Bool initial,          // Should the LP relaxation of constraint be in the initial LP?
     SCIP_Bool separate,         // Should the constraint be separated during LP processing?
@@ -43,13 +43,13 @@ SCIP_RETCODE SCIPcreateConsOldTimeSpacing(
 {
     // Find constraint handler.
     SCIP_CONSHDLR* conshdlr = SCIPfindConshdlr(scip, CONSHDLR_NAME);
-    release_assert(conshdlr, "Constraint handler for old time spacing is not found");
+    release_assert(conshdlr, "Constraint handler for new time spacing is not found");
 
     // Create constraint data.
-    OldTimeSpacingConsData* consdata = nullptr;
+    NewTimeSpacingConsData* consdata = nullptr;
     SCIP_CALL(SCIPallocBlockMemory(scip, &consdata));
     debug_assert(consdata);
-    new(consdata) OldTimeSpacingConsData;
+    new(consdata) NewTimeSpacingConsData;
     consdata->conflicts.reserve(5000);
 
     // Create constraint.
@@ -73,11 +73,11 @@ SCIP_RETCODE SCIPcreateConsOldTimeSpacing(
     return SCIP_OKAY;
 }
 
-SCIP_RETCODE old_time_spacing_create_cut(
+SCIP_RETCODE new_time_spacing_create_cut(
     SCIP* scip,                                        // SCIP
     SCIP_CONS* cons,                                   // Constraint
-    OldTimeSpacingConsData* consdata,                 // Constraint data
-    const NodeTimeAgent nta,                                 // Node-time of the conflict
+    NewTimeSpacingConsData* consdata,                  // Constraint data
+    const NodeTimeAgentSpace ntah,                     // Node-time of the conflict
     const Vector<Pair<SCIP_VAR*, SCIP_Real>>& vars,    // Variables
     SCIP_Result* result                                // Output result
 )
@@ -91,8 +91,8 @@ SCIP_RETCODE old_time_spacing_create_cut(
     // Create constraint name.
 #ifdef DEBUG
     const auto& map = SCIPprobdataGetMap(probdata);
-    const auto [x, y] = map.get_xy(nta.n);
-    const auto name = fmt::format("old_time_spacing(({},{}),{},{})", x, y, nta.t, nta.a);
+    const auto [x, y] = map.get_xy(ntah.n);
+    const auto name = fmt::format("new_time_spacing(({},{}),{},{},{})", x, y, ntah.t, ntah.a, ntah.h);
 #endif
 
     // Create a row.
@@ -128,21 +128,18 @@ SCIP_RETCODE old_time_spacing_create_cut(
         debug_assert(var_val == SCIPgetSolVal(scip, nullptr, var));
 
         // Add coefficients.
-        if  (nta.a == a && path[nta.t].n == nta.n)
+        if  (ntah.a == a && path[ntah.t].n == ntah.n)
         {
             // Add the coefficient.
             SCIP_CALL(SCIPaddVarToRow(scip, row, var, 1.0));
         }
-        else if (nta.a != a)
+        else if (ntah.a != a)
         {
-          for (int h = 0; h <= ts; h++)
-          {
-            if (nta.t + h < path_length && path[nta.t + h].n == nta.n)
+            if (ntah.t + ntah.h < path_length && path[ntah.t + ntah.h].n == ntah.n)
             {
               // Add the coefficient.
-              SCIP_CALL(SCIPaddVarToRow(scip, row, var, 1.0 / ((double) ts + 1)));
+              SCIP_CALL(SCIPaddVarToRow(scip, row, var, 1.0));
             }
-          }
         }
     }
     SCIP_CALL(SCIPflushRowExtensions(scip, row));
@@ -165,23 +162,23 @@ SCIP_RETCODE old_time_spacing_create_cut(
     }
 
     // Store the constraint.
-    debug_assert(consdata->conflicts.find(nta) == consdata->conflicts.end());
-    consdata->conflicts[nta] = {row};
+    debug_assert(consdata->conflicts.find(ntah) == consdata->conflicts.end());
+    consdata->conflicts[ntah] = {row};
 
     // Done.
     return SCIP_OKAY;
 }
 
-// Checker (check whether the solution violates the old_time_spacing constraints or not)
+// Checker (check whether the solution violates the new_time_spacing constraints or not)
 static
-SCIP_RETCODE old_time_spacing_check(
+SCIP_RETCODE new_time_spacing_check(
     SCIP* scip,            // SCIP
     SCIP_SOL* sol,         // Solution
     SCIP_RESULT* result    // Pointer to store the result
 )
 {
     // Print.
-    debugln("Starting checker for old time spacing on solution with obj {:.6f}:",
+    debugln("Starting checker for new time spacing on solution with obj {:.6f}:",
             SCIPgetSolOrigObj(scip, sol));
 
     // Get problem data.
@@ -192,8 +189,8 @@ SCIP_RETCODE old_time_spacing_check(
     const auto ts = SCIPprobdataGetTimeSpacing(probdata);
     const auto N = SCIPprobdataGetN(probdata);
 
-    // Calculate the LHS of old_time_spacing constraints by summing the columns.
-    HashTable<NodeTimeAgent, SCIP_Real> lhs;
+    // Calculate the LHS of new_time_spacing constraints by summing the columns.
+    HashTable<NodeTimeAgentSpace, SCIP_Real> lhs;
     for (const auto& [var, _] : vars)
     {
         // Get the path.
@@ -209,23 +206,21 @@ SCIP_RETCODE old_time_spacing_check(
         // Sum lhs value.
         if (SCIPisPositive(scip, var_val))
         {
-            for (Time t = 0; t < path_length; ++t)
+          for (Time t = 0; t < path_length; ++t)
+          {
+            for (int h = 0; h <= ts; h++)
             {
-                const NodeTimeAgent nta{path[t].n, t, a};
-                lhs[nta] += var_val;
-                for (Agent aa = 0; aa < N; aa++)
-                {
-                  if (aa == a) continue;
-                  for (int h = 0; h <= ts; h++)
-                  {
-                    // if (t - h >= 0)
-                    {
-                      const NodeTimeAgent nta{path[t].n, t - h, aa};
-                      lhs[nta] += var_val / ((double) ts + 1);
-                    }
-                  }
-                }
+              const NodeTimeAgentSpace ntah{path[t].n, t, a,h};
+              lhs[ntah] += var_val;
+              for (Agent aa = 0; aa < N; aa++)
+              {
+                if (aa == a) continue;
+                
+                const NodeTimeAgentSpace ntah{path[t].n, t - h, aa, h};
+                lhs[ntah] += var_val ;
+              }
             }
+          }
         }
     }
 
@@ -244,7 +239,7 @@ SCIP_RETCODE old_time_spacing_check(
 
 // Separator
 static
-SCIP_RETCODE old_time_spacing_separate(
+SCIP_RETCODE new_time_spacing_separate(
     SCIP* scip,                 // SCIP
     SCIP_CONS* cons,            // Constraint
     SCIP_SOL* sol,              // Solution
@@ -252,7 +247,7 @@ SCIP_RETCODE old_time_spacing_separate(
 )
 {
     // Print.
-    debugln("Starting separator for old time spacing on solution with obj {:.6f}:",
+    debugln("Starting separator for new time spacing on solution with obj {:.6f}:",
             SCIPgetSolOrigObj(scip, nullptr));
 
     // Print paths.
@@ -261,7 +256,7 @@ SCIP_RETCODE old_time_spacing_separate(
 #endif
 
     // Get constraint data.
-    auto consdata = reinterpret_cast<OldTimeSpacingConsData*>(SCIPconsGetData(cons));
+    auto consdata = reinterpret_cast<NewTimeSpacingConsData*>(SCIPconsGetData(cons));
     debug_assert(consdata);
 
     // Get problem data.
@@ -275,9 +270,8 @@ SCIP_RETCODE old_time_spacing_separate(
     // Get variables.
     const auto& vars = SCIPprobdataGetVars(probdata);
 
-    // Calculate the lhs of old_time_spacing constraints by summing the columns.
-    HashTable<NodeTimeAgent, SCIP_Real> lhs;
-    // println("lhs[144958, 387, 0] = {}", lhs[NodeTimeAgent{144958, 387, 0}]);
+    // Calculate the lhs of new_time_spacing constraints by summing the columns.
+    HashTable<NodeTimeAgentSpace, SCIP_Real> lhs;
     for (const auto& [var, _] : vars)
     {
         // Get the path.
@@ -293,44 +287,30 @@ SCIP_RETCODE old_time_spacing_separate(
         // Sum lhs value.
         if (SCIPisPositive(scip, var_val))
         {
-            // println("b lhs[144958, 387, 0] = {}", lhs[NodeTimeAgent{144958, 387, 0}]);
-            for (Time t = 0; t < path_length; ++t)
+          for (Time t = 0; t < path_length; ++t)
+          {
+            for (int h = 0; h <= ts; h++)
             {
-                const NodeTimeAgent nta{path[t].n, t, a};
-                lhs[nta] += var_val;
-                // if (nta.n == 144958 && nta.t == 387 && nta.a == 0)
-                // {
-                //   println("added {} {} {}  : {}  {}", nta.n, nta.t, nta.a, var_val, lhs[nta]);
-                // }
-                for (Agent aa = 0; aa < N; aa++)
-                {
-                  if (aa == a) continue;
-                  for (int h = 0; h <= ts; h++)
-                  {
-                      const NodeTimeAgent nta2{path[t].n, t - h, aa};
-                      lhs[nta2] += var_val / ((double) ts + 1);
-                      // if (nta2.n == 144958 && nta2.t == 387 && nta2.a == 0)
-                      // {
-                      //   println("added {} {} {}  : {}  {}", nta2.n, nta2.t, nta2.a, var_val / ((double) ts + 1), lhs[nta2]);
-                      // }
-                      // if (robin_hood::hash<uint64_t>{}(nta2.nta) == robin_hood::hash<uint64_t>{}(NodeTimeAgent{144958, 387, 0}.nta))
-                      // {
-                      //   println("fuck {} {} {}  : {}  {}", nta2.n, nta2.t, nta2.a, var_val / ((double) ts + 1), lhs[nta2]);
-                      // }
-                  }
-                }
+              const NodeTimeAgentSpace ntah{path[t].n, t, a,h};
+              lhs[ntah] += var_val;
+              for (Agent aa = 0; aa < N; aa++)
+              {
+                if (aa == a) continue;
+                
+                const NodeTimeAgentSpace ntah{path[t].n, t - h, aa, h};
+                lhs[ntah] += var_val ;
+              }
             }
-            // println("a lhs[144958, 387, 0] = {}", lhs[NodeTimeAgent{144958, 387, 0}]);
+          }
         }
     }
 
     // Create cuts.
-    // println("lhs[144958, 387, 0] = {}", lhs[NodeTimeAgent{144958, 387, 0}]);
-    for (const auto [nta, val] : lhs)
+    for (const auto [ntah, val] : lhs)
         if (SCIPisSumGT(scip, val, 1.0))
         {
             // Reactive the cut if it already exists. Otherwise create the cut.
-            if (auto it = consdata->conflicts.find(nta); it != consdata->conflicts.end())
+            if (auto it = consdata->conflicts.find(ntah); it != consdata->conflicts.end())
             {
                 // Reactivate the row if it is not in the LP.
                 const auto& [row] = it->second;
@@ -342,15 +322,15 @@ SCIP_RETCODE old_time_spacing_separate(
                 }
                 else
                 {
-                    println("old_time_spacing ctrs {} {} {}  : {}", nta.n, nta.t, nta.a, val);
+                    println("new_time_spacing ctrs {} {} {} {}  : {}", ntah.n, ntah.t, ntah.a, ntah.h, val);
                     release_assert(SCIPisSumLE(scip, val, 1.0 + 1e-6),
-                                   "Old time spacing conflict constraint is violated but is already active");
+                                   "New time spacing conflict constraint is violated but is already active");
                 }
             }
             else
             {
                 // Create cut.
-                SCIP_CALL(old_time_spacing_create_cut(scip, cons, consdata, nta, vars, result));
+                SCIP_CALL(new_time_spacing_create_cut(scip, cons, consdata, ntah, vars, result));
             }
         }
 
@@ -362,7 +342,7 @@ SCIP_RETCODE old_time_spacing_separate(
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 static
-SCIP_DECL_CONSHDLRCOPY(conshdlrCopyOldTimeSpacing)
+SCIP_DECL_CONSHDLRCOPY(conshdlrCopyNewTimeSpacing)
 {
     // Check.
     debug_assert(scip);
@@ -371,7 +351,7 @@ SCIP_DECL_CONSHDLRCOPY(conshdlrCopyOldTimeSpacing)
     debug_assert(valid);
 
     // Include constraint handler.
-    SCIP_CALL(SCIPincludeConshdlrOldTimeSpacing(scip));
+    SCIP_CALL(SCIPincludeConshdlrNewTimeSpacing(scip));
 
     // Done.
     *valid = TRUE;
@@ -383,7 +363,7 @@ SCIP_DECL_CONSHDLRCOPY(conshdlrCopyOldTimeSpacing)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 static
-SCIP_DECL_CONSDELETE(consDeleteOldTimeSpacing)
+SCIP_DECL_CONSDELETE(consDeleteNewTimeSpacing)
 {
     // Check.
     debug_assert(scip);
@@ -394,10 +374,10 @@ SCIP_DECL_CONSDELETE(consDeleteOldTimeSpacing)
     debug_assert(*consdata);
 
     // Override type.
-    auto consdata2 = reinterpret_cast<OldTimeSpacingConsData**>(consdata);
+    auto consdata2 = reinterpret_cast<NewTimeSpacingConsData**>(consdata);
 
     // Free memory.
-    (*consdata2)->~OldTimeSpacingConsData();
+    (*consdata2)->~NewTimeSpacingConsData();
     SCIPfreeBlockMemory(scip, consdata2);
 
     // Done.
@@ -409,7 +389,7 @@ SCIP_DECL_CONSDELETE(consDeleteOldTimeSpacing)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 static
-SCIP_DECL_CONSEXITSOL(consExitsolOldTimeSpacing)
+SCIP_DECL_CONSEXITSOL(consExitsolNewTimeSpacing)
 {
     // Check.
     debug_assert(scip);
@@ -425,13 +405,13 @@ SCIP_DECL_CONSEXITSOL(consExitsolOldTimeSpacing)
         debug_assert(cons);
 
         // Get constraint data.
-        auto consdata = reinterpret_cast<OldTimeSpacingConsData*>(SCIPconsGetData(cons));
+        auto consdata = reinterpret_cast<NewTimeSpacingConsData*>(SCIPconsGetData(cons));
         debug_assert(consdata);
 
         // Free row for each vertex conflict.
-        for (auto& [nt, old_time_spacing] : consdata->conflicts)
+        for (auto& [nt, new_time_spacing] : consdata->conflicts)
         {
-            auto& [row] = old_time_spacing;
+            auto& [row] = new_time_spacing;
             SCIP_CALL(SCIPreleaseRow(scip, &row));
         }
         consdata->conflicts.clear();
@@ -444,7 +424,7 @@ SCIP_DECL_CONSEXITSOL(consExitsolOldTimeSpacing)
 
 // Transform constraint data into data belonging to the transformed problem
 static
-SCIP_DECL_CONSTRANS(consTransOldTimeSpacing)
+SCIP_DECL_CONSTRANS(consTransNewTimeSpacing)
 {
     // Check.
     debug_assert(scip);
@@ -455,18 +435,18 @@ SCIP_DECL_CONSTRANS(consTransOldTimeSpacing)
 
     // Get data of original constraint.
     auto sourcedata =
-        reinterpret_cast<OldTimeSpacingConsData*>(SCIPconsGetData(sourcecons));
+        reinterpret_cast<NewTimeSpacingConsData*>(SCIPconsGetData(sourcecons));
     debug_assert(sourcedata);
 
     // Create constraint data.
-    OldTimeSpacingConsData* targetdata = nullptr;
+    NewTimeSpacingConsData* targetdata = nullptr;
     SCIP_CALL(SCIPallocBlockMemory(scip, &targetdata));
     debug_assert(targetdata);
-    new(targetdata) OldTimeSpacingConsData(*sourcedata);
+    new(targetdata) NewTimeSpacingConsData(*sourcedata);
 
-    // Must begin with no old time spacing.
+    // Must begin with no new time spacing.
     release_assert(sourcedata->conflicts.empty(),
-                   "old time spacing ctrs exist in original problem before transformation");
+                   "new time spacing ctrs exist in original problem before transformation");
 
     // Create constraint.
     char name[SCIP_MAXSTRLEN];
@@ -495,7 +475,7 @@ SCIP_DECL_CONSTRANS(consTransOldTimeSpacing)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 static
-SCIP_DECL_CONSCHECK(consCheckOldTimeSpacing)
+SCIP_DECL_CONSCHECK(consCheckNewTimeSpacing)
 {
     // Check.
     debug_assert(scip);
@@ -509,7 +489,7 @@ SCIP_DECL_CONSCHECK(consCheckOldTimeSpacing)
 
     // Start checker.
     debug_assert(sol);
-    SCIP_CALL(old_time_spacing_check(scip, sol, result));
+    SCIP_CALL(new_time_spacing_check(scip, sol, result));
 
     // Done.
     return SCIP_OKAY;
@@ -520,7 +500,7 @@ SCIP_DECL_CONSCHECK(consCheckOldTimeSpacing)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 static
-SCIP_DECL_CONSENFOLP(consEnfolpOldTimeSpacing)
+SCIP_DECL_CONSENFOLP(consEnfolpNewTimeSpacing)
 {
     // Check.
     debug_assert(scip);
@@ -538,7 +518,7 @@ SCIP_DECL_CONSENFOLP(consEnfolpOldTimeSpacing)
     debug_assert(cons);
 
     // Start separator.
-    SCIP_CALL(old_time_spacing_separate(scip, cons, nullptr, result));
+    SCIP_CALL(new_time_spacing_separate(scip, cons, nullptr, result));
 
     // Done.
     return SCIP_OKAY;
@@ -549,7 +529,7 @@ SCIP_DECL_CONSENFOLP(consEnfolpOldTimeSpacing)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 static
-SCIP_DECL_CONSENFOPS(consEnfopsOldTimeSpacing)
+SCIP_DECL_CONSENFOPS(consEnfopsNewTimeSpacing)
 {
     // Check.
     debug_assert(scip);
@@ -562,7 +542,7 @@ SCIP_DECL_CONSENFOPS(consEnfopsOldTimeSpacing)
     *result = SCIP_FEASIBLE;
 
     // Start checker.
-    SCIP_CALL(old_time_spacing_check(scip, nullptr, result));
+    SCIP_CALL(new_time_spacing_check(scip, nullptr, result));
 
     // Done.
     return SCIP_OKAY;
@@ -573,7 +553,7 @@ SCIP_DECL_CONSENFOPS(consEnfopsOldTimeSpacing)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 static
-SCIP_DECL_CONSSEPALP(consSepalpOldTimeSpacing)
+SCIP_DECL_CONSSEPALP(consSepalpNewTimeSpacing)
 {
     // Check.
     debug_assert(scip);
@@ -591,7 +571,7 @@ SCIP_DECL_CONSSEPALP(consSepalpOldTimeSpacing)
     debug_assert(cons);
 
     // Start separator.
-    SCIP_CALL(old_time_spacing_separate(scip, cons, nullptr, result));
+    SCIP_CALL(new_time_spacing_separate(scip, cons, nullptr, result));
 
     // Done.
     return SCIP_OKAY;
@@ -602,7 +582,7 @@ SCIP_DECL_CONSSEPALP(consSepalpOldTimeSpacing)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 static
-SCIP_DECL_CONSSEPASOL(consSepasolOldTimeSpacing)
+SCIP_DECL_CONSSEPASOL(consSepasolNewTimeSpacing)
 {
     // Check.
     debug_assert(scip);
@@ -621,7 +601,7 @@ SCIP_DECL_CONSSEPASOL(consSepasolOldTimeSpacing)
 
     // Start separator.
     debug_assert(sol);
-    SCIP_CALL(old_time_spacing_separate(scip, cons, sol, result));
+    SCIP_CALL(new_time_spacing_separate(scip, cons, sol, result));
 
     // Done.
     return SCIP_OKAY;
@@ -632,7 +612,7 @@ SCIP_DECL_CONSSEPASOL(consSepasolOldTimeSpacing)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 static
-SCIP_DECL_CONSLOCK(consLockOldTimeSpacing)
+SCIP_DECL_CONSLOCK(consLockNewTimeSpacing)
 {
     // Check.
     debug_assert(scip);
@@ -660,7 +640,7 @@ SCIP_DECL_CONSLOCK(consLockOldTimeSpacing)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 static
-SCIP_DECL_CONSCOPY(consCopyOldTimeSpacing)
+SCIP_DECL_CONSCOPY(consCopyNewTimeSpacing)
 {
     // Check.
     debug_assert(scip);
@@ -679,7 +659,7 @@ SCIP_DECL_CONSCOPY(consCopyOldTimeSpacing)
         {
             name = SCIPconsGetName(sourcecons);
         }
-        SCIP_CALL(SCIPcreateConsOldTimeSpacing(scip,
+        SCIP_CALL(SCIPcreateConsNewTimeSpacing(scip,
                                                 cons,
                                                 name,
                                                 initial,
@@ -702,8 +682,8 @@ SCIP_DECL_CONSCOPY(consCopyOldTimeSpacing)
 }
 #pragma GCC diagnostic pop
 
-// Creates constraint handler for old time spacing constraints and include it in SCIP
-SCIP_RETCODE SCIPincludeConshdlrOldTimeSpacing(
+// Creates constraint handler for new time spacing constraints and include it in SCIP
+SCIP_RETCODE SCIPincludeConshdlrNewTimeSpacing(
     SCIP* scip    // SCIP
 )
 {
@@ -717,31 +697,31 @@ SCIP_RETCODE SCIPincludeConshdlrOldTimeSpacing(
                                        CONSHDLR_CHECKPRIORITY,
                                        CONSHDLR_EAGERFREQ,
                                        CONSHDLR_NEEDSCONS,
-                                       consEnfolpOldTimeSpacing,
-                                       consEnfopsOldTimeSpacing,
-                                       consCheckOldTimeSpacing,
-                                       consLockOldTimeSpacing,
+                                       consEnfolpNewTimeSpacing,
+                                       consEnfopsNewTimeSpacing,
+                                       consCheckNewTimeSpacing,
+                                       consLockNewTimeSpacing,
                                        nullptr));
     debug_assert(conshdlr);
 
     // Set callbacks.
     SCIP_CALL(SCIPsetConshdlrDelete(scip,
                                     conshdlr,
-                                    consDeleteOldTimeSpacing));
+                                    consDeleteNewTimeSpacing));
     SCIP_CALL(SCIPsetConshdlrExitsol(scip,
                                      conshdlr,
-                                     consExitsolOldTimeSpacing));
+                                     consExitsolNewTimeSpacing));
     SCIP_CALL(SCIPsetConshdlrCopy(scip,
                                   conshdlr,
-                                  conshdlrCopyOldTimeSpacing,
-                                  consCopyOldTimeSpacing));
+                                  conshdlrCopyNewTimeSpacing,
+                                  consCopyNewTimeSpacing));
     SCIP_CALL(SCIPsetConshdlrTrans(scip,
                                    conshdlr,
-                                   consTransOldTimeSpacing));
+                                   consTransNewTimeSpacing));
     SCIP_CALL(SCIPsetConshdlrSepa(scip,
                                   conshdlr,
-                                  consSepalpOldTimeSpacing,
-                                  consSepasolOldTimeSpacing,
+                                  consSepalpNewTimeSpacing,
+                                  consSepasolNewTimeSpacing,
                                   CONSHDLR_SEPAFREQ,
                                   CONSHDLR_SEPAPRIORITY,
                                   CONSHDLR_DELAYSEPA));
@@ -750,9 +730,9 @@ SCIP_RETCODE SCIPincludeConshdlrOldTimeSpacing(
     return SCIP_OKAY;
 }
 
-SCIP_RETCODE old_time_spacing_add_var(
+SCIP_RETCODE new_time_spacing_add_var(
     SCIP* scip,                 // SCIP
-    SCIP_CONS* cons,            // old_time_spacing constraint
+    SCIP_CONS* cons,            // new_time_spacing constraint
     SCIP_VAR* var,              // Variable
     const Time path_length,     // Path length
     const Edge* const path      // Path
@@ -760,7 +740,7 @@ SCIP_RETCODE old_time_spacing_add_var(
 {
     // Get constraint data.
     debug_assert(cons);
-    auto consdata = reinterpret_cast<OldTimeSpacingConsData*>(SCIPconsGetData(cons));
+    auto consdata = reinterpret_cast<NewTimeSpacingConsData*>(SCIPconsGetData(cons));
     debug_assert(consdata);
 
     // Check.
@@ -777,21 +757,18 @@ SCIP_RETCODE old_time_spacing_add_var(
     SCIP_CALL(SCIPlockVarCons(scip, var, cons, FALSE, TRUE));
 
     // Add variable to constraints. 
-    for (const auto& [nta, old_time_spacing] : consdata->conflicts)
+    for (const auto& [ntah, new_time_spacing] : consdata->conflicts)
     {
-        const auto& [row] = old_time_spacing;
-        if (nta.a == a && nta.t < path_length && path[nta.t].n == nta.n)
+        const auto& [row] = new_time_spacing;
+        if (ntah.a == a && ntah.t < path_length && path[ntah.t].n == ntah.n)
         {
             SCIP_CALL(SCIPaddVarToRow(scip, row, var, 1.0));
         }
-        else if (nta.a != a)
+        else if (ntah.a != a)
         {
-          for (int h = 0; h <= ts; h++)
+          if (ntah.t + ntah.h < path_length && path[ntah.t + ntah.h].n == ntah.n)
           {
-            if (nta.t + h < path_length && path[nta.t + h].n == nta.n)
-            {
-              SCIP_CALL(SCIPaddVarToRow(scip, row, var, 1.0 / ((double) ts + 1)));
-            }
+            SCIP_CALL(SCIPaddVarToRow(scip, row, var, 1.0));
           }
         }
     }
@@ -800,13 +777,13 @@ SCIP_RETCODE old_time_spacing_add_var(
     return SCIP_OKAY;
 }
 
-const HashTable<NodeTimeAgent, OldTimeSpacing>& old_time_spacing_get_constraints(
+const HashTable<NodeTimeAgentSpace, NewTimeSpacing>& new_time_spacing_get_constraints(
     SCIP_ProbData* probdata    // Problem data
 )
 {
-    auto cons = SCIPprobdataGetOldTimeSpacingCons(probdata);
+    auto cons = SCIPprobdataGetNewTimeSpacingCons(probdata);
     debug_assert(cons);
-    auto consdata = reinterpret_cast<OldTimeSpacingConsData*>(SCIPconsGetData(cons));
+    auto consdata = reinterpret_cast<NewTimeSpacingConsData*>(SCIPconsGetData(cons));
     debug_assert(consdata);
     return consdata->conflicts;
 }

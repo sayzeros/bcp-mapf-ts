@@ -1148,6 +1148,30 @@ bcp/ConstraintHandler_EdgeConflicts.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/bcp-mapf.dir/build.make CMakeFiles/bcp-mapf.dir/bcp/ConstraintHandler_EdgeConflicts.cpp.s
 .PHONY : bcp/ConstraintHandler_EdgeConflicts.cpp.s
 
+bcp/ConstraintHandler_NewTimeSpacing.o: bcp/ConstraintHandler_NewTimeSpacing.cpp.o
+.PHONY : bcp/ConstraintHandler_NewTimeSpacing.o
+
+# target to build an object file
+bcp/ConstraintHandler_NewTimeSpacing.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bcp-mapf.dir/build.make CMakeFiles/bcp-mapf.dir/bcp/ConstraintHandler_NewTimeSpacing.cpp.o
+.PHONY : bcp/ConstraintHandler_NewTimeSpacing.cpp.o
+
+bcp/ConstraintHandler_NewTimeSpacing.i: bcp/ConstraintHandler_NewTimeSpacing.cpp.i
+.PHONY : bcp/ConstraintHandler_NewTimeSpacing.i
+
+# target to preprocess a source file
+bcp/ConstraintHandler_NewTimeSpacing.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bcp-mapf.dir/build.make CMakeFiles/bcp-mapf.dir/bcp/ConstraintHandler_NewTimeSpacing.cpp.i
+.PHONY : bcp/ConstraintHandler_NewTimeSpacing.cpp.i
+
+bcp/ConstraintHandler_NewTimeSpacing.s: bcp/ConstraintHandler_NewTimeSpacing.cpp.s
+.PHONY : bcp/ConstraintHandler_NewTimeSpacing.s
+
+# target to generate assembly for a file
+bcp/ConstraintHandler_NewTimeSpacing.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bcp-mapf.dir/build.make CMakeFiles/bcp-mapf.dir/bcp/ConstraintHandler_NewTimeSpacing.cpp.s
+.PHONY : bcp/ConstraintHandler_NewTimeSpacing.cpp.s
+
 bcp/ConstraintHandler_OldTimeSpacing.o: bcp/ConstraintHandler_OldTimeSpacing.cpp.o
 .PHONY : bcp/ConstraintHandler_OldTimeSpacing.o
 
@@ -2288,6 +2312,9 @@ help:
 	@echo "... bcp/ConstraintHandler_EdgeConflicts.o"
 	@echo "... bcp/ConstraintHandler_EdgeConflicts.i"
 	@echo "... bcp/ConstraintHandler_EdgeConflicts.s"
+	@echo "... bcp/ConstraintHandler_NewTimeSpacing.o"
+	@echo "... bcp/ConstraintHandler_NewTimeSpacing.i"
+	@echo "... bcp/ConstraintHandler_NewTimeSpacing.s"
 	@echo "... bcp/ConstraintHandler_OldTimeSpacing.o"
 	@echo "... bcp/ConstraintHandler_OldTimeSpacing.i"
 	@echo "... bcp/ConstraintHandler_OldTimeSpacing.s"
